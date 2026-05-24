@@ -1,0 +1,51 @@
+["init"]
+description = "Initialize your project"
+run = "node scripts/bootstrap.js"
+
+["dev"]
+description = "Start development servers across workspace"
+run = "pnpm -r --parallel run dev"
+
+["build"]
+description = "Build all packages"
+run = "pnpm -r run build"
+
+["format"]
+description = "Format code with Biome"
+run = "biome check --write ."
+
+["test"]
+description = "Run tests across workspace"
+run = "pnpm -r run test"
+
+["lint"]
+description = "Lint code with Biome"
+run = "biome lint ."
+
+["lint:fix"]
+description = "Lint code with Biome"
+run = "biome lint . --write"
+
+["typecheck"]
+description = "Type check all packages"
+run = "pnpm -r run typecheck"
+
+["db:start"]
+description = "Start the local Supabase container stack"
+run = "supabase start --workdir tools"
+
+["db:stop"]
+description = "Stop the local Supabase container stack"
+run = "supabase stop --workdir tools"
+
+["db:status"]
+description = "Check the local Supabase container status"
+run = "supabase status --workdir tools"
+
+["db:reset"]
+description = "Reset the local database and re-apply all SQL migrations"
+run = "supabase db reset --workdir tools"
+
+["db:types"]
+description = "Re-generate TypeScript types from local Supabase Postgres"
+run = "pnpm --filter ./packages/db run gen-types"

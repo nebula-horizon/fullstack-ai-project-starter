@@ -1,0 +1,203 @@
+openapi: "3.0.3"
+info:
+  title: "Template API"
+  version: "0.1.0"
+  description: "Clean-Architecture AdonisJS Backend API"
+components:
+  responses:
+    Forbidden:
+      description: "Access token is missing or invalid"
+    Accepted:
+      description: "The request was accepted"
+    Created:
+      description: "The resource has been created"
+    NotFound:
+      description: "The resource has been created"
+    NotAcceptable:
+      description: "The resource has been created"
+  securitySchemes:
+    BearerAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"
+    BasicAuth:
+      type: "http"
+      scheme: "basic"
+    ApiKeyAuth:
+      type: "apiKey"
+      in: "header"
+      name: "X-API-Key"
+  schemas:
+    Any:
+      description: "Any JSON object not defined as schema"
+    PaginationMeta:
+      type: "object"
+      properties:
+        total:
+          type: "number"
+          example: 100
+          nullable: false
+        page:
+          type: "number"
+          example: 2
+          nullable: false
+        perPage:
+          type: "number"
+          example: 10
+          nullable: false
+        currentPage:
+          type: "number"
+          example: 3
+          nullable: false
+        lastPage:
+          type: "number"
+          example: 10
+          nullable: false
+        firstPage:
+          type: "number"
+          example: 1
+          nullable: false
+        lastPageUrl:
+          type: "string"
+          example: "/?page=10"
+          nullable: false
+        firstPageUrl:
+          type: "string"
+          example: "/?page=1"
+          nullable: false
+        nextPageUrl:
+          type: "string"
+          example: "/?page=6"
+          nullable: false
+        previousPageUrl:
+          type: "string"
+          example: "/?page=5"
+          nullable: false
+    loginValidator:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          example: "Lorem Ipsum"
+          maxLength: 254
+        password:
+          type: "string"
+          example: "Lorem Ipsum"
+      required:
+        - "email"
+        - "password"
+      example:
+        email: "Lorem Ipsum"
+        password: "Lorem Ipsum"
+      description: "loginValidator (Validator)"
+    signupValidator:
+      type: "object"
+      properties:
+        fullName:
+          type: "string"
+          example: "Lorem Ipsum"
+        email:
+          type: "string"
+          example: "Lorem Ipsum"
+          maxLength: 254
+        password:
+          type: "string"
+          example: "Lorem Ipsum"
+          minLength: 8
+          maxLength: 32
+        passwordConfirmation:
+          type: "string"
+          example: "Lorem Ipsum"
+          minLength: 8
+          maxLength: 32
+      required:
+        - "fullName"
+        - "email"
+        - "password"
+        - "passwordConfirmation"
+      example:
+        fullName: "Lorem Ipsum"
+        email: "Lorem Ipsum"
+        password: "Lorem Ipsum"
+        passwordConfirmation: "Lorem Ipsum"
+      description: "signupValidator (Validator)"
+paths:
+  /health:
+    get:
+      summary: "route"
+      description: "__ - ****"
+      parameters: []
+      tags:
+        - "HEALTH"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json: {}
+      security: []
+  /api/v1/users/me:
+    get:
+      summary: "Returns **200** (OK) as **application/json** (me)"
+      description: "Returns **200** (OK) as **application/json**<br><br>_app/controllers/users_controller.ts_ - **me**"
+      operationId: "me"
+      parameters: []
+      tags:
+        - "API"
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  id: "string"
+                  email: "string"
+                  fullName: "string"
+              example:
+                id: "string"
+                email: "string"
+                fullName: "string"
+          description: "Returns **200** (OK) as **application/json**"
+      security: []
+  /api/v1/users/create:
+    post:
+      summary: "Create (Frontend) api (create)"
+      description: "_app/controllers/users_controller.ts_ - **create**"
+      operationId: "create"
+      parameters: []
+      tags:
+        - "API"
+      responses:
+        210:
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  id: "string"
+                  email: "string"
+                  fullName: "string"
+              example:
+                id: "string"
+                email: "string"
+                fullName: "string"
+          description: "Returns **210** (Unknown) as **application/json**"
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                id: "string"
+                email: "string"
+                fullName: "string"
+            example:
+              id: "string"
+              email: "string"
+              fullName: "string"
+tags:
+  - name: "HEALTH"
+    description: "Everything related to HEALTH"
+  - name: "API"
+    description: "Everything related to API"

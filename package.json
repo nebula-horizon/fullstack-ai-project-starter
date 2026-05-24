@@ -1,0 +1,35 @@
+{
+  "name": "fullstack-ai-project-starter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fullstack AI Project Starter - monorepo template",
+  "type": "module",
+  "scripts": {
+    "dev": "mise run dev",
+    "build": "mise run build",
+    "format": "mise run format",
+    "test": "mise run test",
+    "lint": "biome lint .",
+    "lint:fix": "biome check --write ."
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "keywords": [
+    "monorepo",
+    "fullstack",
+    "ai",
+    "template"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15"
+  }
+}

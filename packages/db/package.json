@@ -1,0 +1,26 @@
+{
+  "name": "@template/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared database types and utilities",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "gen-types": "supabase gen types typescript --local --workdir ../../tools > src/types.ts"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  }
+}

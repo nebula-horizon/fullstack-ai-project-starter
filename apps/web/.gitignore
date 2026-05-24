@@ -1,0 +1,11 @@
+# Build and Temp Directories
+.output/
+.tanstack/tmp
+
+# Local Env
+.env
+.env*.local
+
+# Dependencies
+node_modules/
+.npm-overrides/

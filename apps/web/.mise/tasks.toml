@@ -1,0 +1,11 @@
+["web:dev"]
+description = "Start TanStack Start web dev server"
+run = "pnpm run dev"
+
+["web:build"]
+description = "Build TanStack Start web application for production"
+run = "pnpm run build"
+
+["web:preview"]
+description = "Preview built web application"
+run = "pnpm run start"

@@ -1,0 +1,19 @@
+["api:dev"]
+description = "Start AdonisJS v6 api server"
+dir = "{{ config_root }}/apps/api"
+run = "node --import tsx bin/server.js"
+
+["api:build"]
+description = "Build AdonisJS v6 backend application for production"
+dir = "{{ config_root }}/apps/api"
+run = "node ace build"
+
+["api:test"]
+description = "Run AdonisJS Japa functional test suite"
+dir = "{{ config_root }}/apps/api"
+run = "pnpm run test"
+
+["api:generate-openapi"]
+description = "Generate and export openapi.yaml spec"
+dir = "{{ config_root }}/apps/api"
+run = "node --import tsx ace.js docs:generate"
