@@ -33,10 +33,11 @@ export default class UsersController {
 
       return response.ok(domainUser)
     } catch (_e) {
-      return response.status(404).send({
-        id: user.sub,
-        email: user.email,
-        fullName: user.fullName,
+      return response.status(500).send({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not retrieve user',
+        },
       })
     }
   }
@@ -45,7 +46,7 @@ export default class UsersController {
    * @create
    * @operationId create
    * @requestBody {"id": "string", "email": "string", "fullName": "string"}
-   * @responseBody 210 - { "id": "string", "email": "string", "fullName": "string" }
+   * @responseBody 201 - { "id": "string", "email": "string", "fullName": "string" }
    */
   async create({ request, response }: HttpContext) {
     const { id, email, fullName } = request.only(['id', 'email', 'fullName'])
@@ -65,7 +66,7 @@ export default class UsersController {
         email,
         fullName: fullName || null,
       })
-      return response.status(210).send(created)
+      return response.status(201).send(created)
     } catch (e) {
       return response.status(500).send({
         error: {

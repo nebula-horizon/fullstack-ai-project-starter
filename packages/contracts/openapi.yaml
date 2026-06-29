@@ -168,7 +168,7 @@ paths:
       tags:
         - "API"
       responses:
-        210:
+        201:
           content:
             application/json:
               schema:
@@ -181,7 +181,7 @@ paths:
                 id: "string"
                 email: "string"
                 fullName: "string"
-          description: "Returns **210** (Unknown) as **application/json**"
+          description: "Returns **201** (Created) as **application/json**"
       security: []
       requestBody:
         content:

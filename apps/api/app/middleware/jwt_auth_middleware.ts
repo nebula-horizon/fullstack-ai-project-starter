@@ -46,7 +46,9 @@ export default class JwtAuthMiddleware {
       ctx.user = {
         sub: payload.sub as string,
         email: payload.email as string,
-        fullName: (payload.fullName || payload.full_name) as string | null,
+        fullName: ((payload.user_metadata as Record<string, unknown>)?.full_name ?? null) as
+          | string
+          | null,
       }
 
       await next()

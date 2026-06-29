@@ -32,7 +32,8 @@ export default class DocsGenerate extends BaseCommand {
 
     const autoSwaggerModule = await import('@rnwonder/adonis-autoswagger')
     // Unwrap whatever interop shape the (CJS) package resolves to.
-    const AutoSwagger = autoSwaggerModule.default?.default ?? autoSwaggerModule.default ?? autoSwaggerModule
+    const AutoSwagger =
+      autoSwaggerModule.default?.default ?? autoSwaggerModule.default ?? autoSwaggerModule
     const swaggerModule = await import('../config/swagger.js')
     const swagger = swaggerModule.default || swaggerModule
 

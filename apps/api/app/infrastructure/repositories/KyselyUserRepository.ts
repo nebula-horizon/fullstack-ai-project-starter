@@ -14,6 +14,7 @@ export class KyselyUserRepository implements UserRepository {
       id: row.id,
       email: row.email,
       fullName: row.full_name,
+      createdAt: row.created_at,
     }
   }
 
@@ -33,6 +34,7 @@ export class KyselyUserRepository implements UserRepository {
       id: row.id,
       email: row.email,
       fullName: row.full_name,
+      createdAt: row.created_at,
     }
   }
 }

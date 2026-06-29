@@ -3,9 +3,8 @@
  * Do not make direct changes to the file.
  */
 
-
 export interface paths {
-  "/health": {
+  '/health': {
     /**
      * route
      * @description __ - ****
@@ -15,56 +14,56 @@ export interface paths {
         /** @description OK */
         200: {
           content: {
-            "application/json": unknown;
-          };
-        };
-      };
-    };
-  };
-  "/api/v1/users/me": {
+            'application/json': unknown
+          }
+        }
+      }
+    }
+  }
+  '/api/v1/users/me': {
     /**
      * Returns **200** (OK) as **application/json** (me)
      * @description Returns **200** (OK) as **application/json**<br><br>_app/controllers/users_controller.ts_ - **me**
      */
-    get: operations["me"];
-  };
-  "/api/v1/users/create": {
+    get: operations['me']
+  }
+  '/api/v1/users/create': {
     /**
      * Create (Frontend) api (create)
      * @description _app/controllers/users_controller.ts_ - **create**
      */
-    post: operations["create"];
-  };
+    post: operations['create']
+  }
 }
 
-export type webhooks = Record<string, never>;
+export type webhooks = Record<string, never>
 
 export interface components {
   schemas: {
     /** @description Any JSON object not defined as schema */
-    Any: unknown;
+    Any: unknown
     PaginationMeta: {
       /** @example 100 */
-      total?: number;
+      total?: number
       /** @example 2 */
-      page?: number;
+      page?: number
       /** @example 10 */
-      perPage?: number;
+      perPage?: number
       /** @example 3 */
-      currentPage?: number;
+      currentPage?: number
       /** @example 10 */
-      lastPage?: number;
+      lastPage?: number
       /** @example 1 */
-      firstPage?: number;
+      firstPage?: number
       /** @example /?page=10 */
-      lastPageUrl?: string;
+      lastPageUrl?: string
       /** @example /?page=1 */
-      firstPageUrl?: string;
+      firstPageUrl?: string
       /** @example /?page=6 */
-      nextPageUrl?: string;
+      nextPageUrl?: string
       /** @example /?page=5 */
-      previousPageUrl?: string;
-    };
+      previousPageUrl?: string
+    }
     /**
      * @description loginValidator (Validator)
      * @example {
@@ -74,10 +73,10 @@ export interface components {
      */
     loginValidator: {
       /** @example Lorem Ipsum */
-      email: string;
+      email: string
       /** @example Lorem Ipsum */
-      password: string;
-    };
+      password: string
+    }
     /**
      * @description signupValidator (Validator)
      * @example {
@@ -89,49 +88,48 @@ export interface components {
      */
     signupValidator: {
       /** @example Lorem Ipsum */
-      fullName: string;
+      fullName: string
       /** @example Lorem Ipsum */
-      email: string;
+      email: string
       /** @example Lorem Ipsum */
-      password: string;
+      password: string
       /** @example Lorem Ipsum */
-      passwordConfirmation: string;
-    };
-  };
+      passwordConfirmation: string
+    }
+  }
   responses: {
     /** @description Access token is missing or invalid */
     Forbidden: {
-      content: never;
-    };
+      content: never
+    }
     /** @description The request was accepted */
     Accepted: {
-      content: never;
-    };
+      content: never
+    }
     /** @description The resource has been created */
     Created: {
-      content: never;
-    };
+      content: never
+    }
     /** @description The resource has been created */
     NotFound: {
-      content: never;
-    };
+      content: never
+    }
     /** @description The resource has been created */
     NotAcceptable: {
-      content: never;
-    };
-  };
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+      content: never
+    }
+  }
+  parameters: never
+  requestBodies: never
+  headers: never
+  pathItems: never
 }
 
-export type $defs = Record<string, never>;
+export type $defs = Record<string, never>
 
-export type external = Record<string, never>;
+export type external = Record<string, never>
 
 export interface operations {
-
   /**
    * Returns **200** (OK) as **application/json** (me)
    * @description Returns **200** (OK) as **application/json**<br><br>_app/controllers/users_controller.ts_ - **me**
@@ -141,15 +139,15 @@ export interface operations {
       /** @description Returns **200** (OK) as **application/json** */
       200: {
         content: {
-          "application/json": {
-            id?: string;
-            email?: string;
-            fullName?: string;
-          };
-        };
-      };
-    };
-  };
+          'application/json': {
+            id?: string
+            email?: string
+            fullName?: string
+          }
+        }
+      }
+    }
+  }
   /**
    * Create (Frontend) api (create)
    * @description _app/controllers/users_controller.ts_ - **create**
@@ -164,24 +162,24 @@ export interface operations {
          *   "fullName": "string"
          * }
          */
-        "application/json": {
-          id?: string;
-          email?: string;
-          fullName?: string;
-        };
-      };
-    };
+        'application/json': {
+          id?: string
+          email?: string
+          fullName?: string
+        }
+      }
+    }
     responses: {
-      /** @description Returns **210** (Unknown) as **application/json** */
-      210: {
+      /** @description Returns **201** (Created) as **application/json** */
+      201: {
         content: {
-          "application/json": {
-            id?: string;
-            email?: string;
-            fullName?: string;
-          };
-        };
-      };
-    };
-  };
+          'application/json': {
+            id?: string
+            email?: string
+            fullName?: string
+          }
+        }
+      }
+    }
+  }
 }
