@@ -288,7 +288,17 @@ function runPnpmInstall() {
   return new Promise((resolve, reject) => {
     console.log('\n📦 Running pnpm install to rebuild symlinks...')
 
-    const pnpm = spawn('pnpm', ['install'], {
+    const pnpmPath = resolveBin('pnpm')
+    if (!pnpmPath) {
+      reject(
+        new Error(
+          'pnpm not found on PATH. Install it (https://pnpm.io/installation) or run "corepack enable", then run "pnpm install" manually.'
+        )
+      )
+      return
+    }
+
+    const pnpm = spawn(pnpmPath, ['install'], {
       cwd: ROOT_DIR,
       stdio: 'pipe',
       shell: true,
@@ -504,8 +514,8 @@ async function renameMode(cliName) {
   try {
     await runPnpmInstall()
     console.log(`\n✨ Bootstrap complete! Your project "${projectName}" is ready to develop.`)
-  } catch (_err) {
-    console.error('\n⚠ Bootstrap succeeded but pnpm install failed.')
+  } catch (err) {
+    console.error(`\n⚠ Bootstrap succeeded but pnpm install failed: ${err.message}`)
     console.error('Please run "pnpm install" manually to rebuild symlinks.')
     process.exit(1)
   }
