@@ -294,6 +294,11 @@ function runPnpmInstall() {
       shell: true,
     })
 
+    let stderr = ''
+    pnpm.stderr.on('data', (chunk) => {
+      stderr += chunk
+    })
+
     pnpm.on('close', (code) => {
       if (code === 0) {
         console.log('✓ pnpm install completed successfully.')
@@ -430,10 +435,17 @@ function runRenameChild(projectName) {
 }
 
 /**
- * Single-quote an argument for safe inclusion in a shell command string.
+ * Single-quote an argument for safe inclusion in a POSIX shell command string.
  */
 function shellQuote(arg) {
   return `'${String(arg).replace(/'/g, "'\\''")}'`
+}
+
+/**
+ * Double-quote an argument for safe inclusion in a cmd.exe command string.
+ */
+function shellQuoteWindows(arg) {
+  return `"${String(arg).replace(/"/g, '""')}"`
 }
 
 /**
@@ -448,7 +460,15 @@ function launchAgent(agent, projectName) {
   return new Promise((resolve) => {
     let child
     if (process.platform === 'win32') {
-      child = spawn(target, [...agent.autoFlag, prompt], { cwd: ROOT_DIR, stdio: 'inherit' })
+      // Global npm installs resolve agent bins to .cmd shims on Windows, which
+      // CreateProcess cannot launch directly — route through cmd.exe like the
+      // POSIX branch routes through the user's shell.
+      const command = [target, ...agent.autoFlag, prompt].map(shellQuoteWindows).join(' ')
+      child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', command], {
+        cwd: ROOT_DIR,
+        stdio: 'inherit',
+        windowsVerbatimArguments: true,
+      })
     } else {
       // Launch through the user's login + interactive shell so the agent runs
       // with the same PATH/environment they get in their terminal. Some agents
