@@ -298,10 +298,9 @@ function runPnpmInstall() {
       return
     }
 
-    const pnpm = spawn(pnpmPath, ['install'], {
+    const pnpm = spawnBinary(pnpmPath, ['install'], {
       cwd: ROOT_DIR,
       stdio: 'pipe',
-      shell: true,
     })
 
     let stderr = ''
@@ -459,6 +458,36 @@ function shellQuoteWindows(arg) {
 }
 
 /**
+ * Windows can only CreateProcess .exe files directly — .cmd/.bat are shell
+ * scripts and must be routed through cmd.exe. Native .exe binaries (e.g.
+ * WinGet-installed tools) must NOT be routed through cmd.exe: it requires
+ * re-quoting the whole command line, and nested quotes there conflict with
+ * argument quotes, corrupting the parse.
+ */
+function isWindowsShellScript(filePath) {
+  const ext = String(filePath).split('.').pop().toLowerCase()
+  return ext === 'cmd' || ext === 'bat'
+}
+
+/**
+ * Spawn a resolved absolute binary path directly, routing through cmd.exe
+ * only when required (.cmd/.bat). Never uses shell:true with a bare
+ * command+args pair: Node's shell:true naively space-joins command and args
+ * before quoting once, which corrupts paths containing spaces (e.g.
+ * "C:\Users\John Doe\...\pnpm.exe").
+ */
+function spawnBinary(binPath, args, opts) {
+  if (process.platform === 'win32' && isWindowsShellScript(binPath)) {
+    const command = [binPath, ...args].map(shellQuoteWindows).join(' ')
+    return spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', command], {
+      ...opts,
+      windowsVerbatimArguments: true,
+    })
+  }
+  return spawn(binPath, args, opts)
+}
+
+/**
  * Hand the terminal off to the chosen agent, primed to read the playbook
  */
 function launchAgent(agent, projectName) {
@@ -470,14 +499,11 @@ function launchAgent(agent, projectName) {
   return new Promise((resolve) => {
     let child
     if (process.platform === 'win32') {
-      // Global npm installs resolve agent bins to .cmd shims on Windows, which
-      // CreateProcess cannot launch directly — route through cmd.exe like the
-      // POSIX branch routes through the user's shell.
-      const command = [target, ...agent.autoFlag, prompt].map(shellQuoteWindows).join(' ')
-      child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', command], {
+      // .cmd/.bat shims (npm global installs) route through cmd.exe; native
+      // .exe binaries (e.g. WinGet-installed Claude Code) spawn directly.
+      child = spawnBinary(target, [...agent.autoFlag, prompt], {
         cwd: ROOT_DIR,
         stdio: 'inherit',
-        windowsVerbatimArguments: true,
       })
     } else {
       // Launch through the user's login + interactive shell so the agent runs
