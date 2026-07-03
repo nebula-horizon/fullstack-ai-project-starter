@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { stdin as input, stdout as output } from 'node:process'
 import { createInterface } from 'node:readline/promises'
@@ -62,6 +62,36 @@ const FILES_TO_UPDATE = [
 ]
 
 /**
+ * Create .claude as a junction (Windows) or symlink (Unix) pointing to .agents.
+ * Junctions need no admin rights on Windows; symlinks do on some Unix setups.
+ * No-op if .claude already exists.
+ */
+function createClaudeLink() {
+  const claudePath = join(ROOT_DIR, '.claude')
+  const agentsPath = join(ROOT_DIR, '.agents')
+
+  try {
+    lstatSync(claudePath)
+    return // already exists — symlink, junction, or real dir
+  } catch {
+    // doesn't exist yet, create it
+  }
+
+  try {
+    if (process.platform === 'win32') {
+      // junction requires absolute target and works without elevated privileges
+      symlinkSync(agentsPath, claudePath, 'junction')
+    } else {
+      symlinkSync('.agents', claudePath, 'dir')
+    }
+    console.log('✓ Created .claude link → .agents')
+  } catch (err) {
+    console.warn(`⚠ Could not create .claude link: ${err.message}`)
+    console.warn('  Claude Code project settings will be unavailable until the link is created.')
+  }
+}
+
+/**
  * Parse command-line arguments
  */
 function parseCliArgs() {
@@ -70,6 +100,9 @@ function parseCliArgs() {
       name: {
         type: 'string',
         short: 'n',
+      },
+      link: {
+        type: 'boolean',
       },
       help: {
         type: 'boolean',
@@ -90,19 +123,21 @@ your app. With --name (or in CI/headless), runs the rename engine only.
 
 Options:
   -n, --name <name>    Project name in kebab-case (rename-only, no agent launch)
+      --link           Create .claude → .agents link only, then exit
   -h, --help          Display this help message
     `)
     process.exit(0)
   }
 
-  return values.name
+  return { name: values.name, link: !!values.link }
 }
 
 /**
- * Check if running in CI environment or non-interactive mode
+ * Check if running in CI environment or non-interactive mode.
+ * Uses stdin.isTTY — more reliable than stdout.isTTY on Windows.
  */
 function isNonInteractive() {
-  return process.env.CI === 'true' || !process.stdout.isTTY
+  return process.env.CI === 'true' || !process.stdin.isTTY
 }
 
 /**
@@ -521,7 +556,11 @@ async function launcherMode() {
  * Entry point: choose rename-only mode vs the interactive launcher journey.
  */
 async function bootstrap() {
-  const cliName = parseCliArgs()
+  const { name: cliName, link } = parseCliArgs()
+
+  createClaudeLink()
+
+  if (link) return
 
   if (cliName !== undefined || isNonInteractive()) {
     await renameMode(cliName)
