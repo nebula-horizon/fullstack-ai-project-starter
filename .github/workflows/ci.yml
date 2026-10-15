@@ -1,0 +1,83 @@
+# Build, lint, typecheck and test on every pull request and on pushes to dev
+# and main. Nothing here touches AWS or a hosted database.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22.22.3 # same as mise.toml and the Dockerfiles
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint and format (Biome)
+        run: pnpm exec biome ci .
+
+      # Regenerates every committed generated file and builds contracts and
+      # the web app on the way. A diff means someone forgot `mise run generate`.
+      - name: Generated files are up to date
+        run: |
+          tools/scripts/regenerate.sh
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git status --short
+            git diff
+            echo "::error::Generated files are stale — run 'mise run generate' and commit the result."
+            exit 1
+          fi
+
+      - name: Typecheck
+        run: |
+          pnpm --filter @template/db run build
+          pnpm --filter ./apps/api run typecheck
+          pnpm --filter ./apps/web run typecheck
+
+      - name: Build the API
+        run: pnpm --filter ./apps/api run build
+
+  api-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.113.0 # same as mise.toml
+      # Local Supabase Postgres with every migration applied; the tests query it.
+      - run: supabase db start --workdir tools
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @template/db run build
+      - name: API tests
+        env:
+          # Test-only values for the local CLI stack; nothing here is a real secret.
+          NODE_ENV: test
+          PORT: '3333'
+          HOST: localhost
+          LOG_LEVEL: info
+          APP_KEY: ci-placeholder-not-a-real-key-000000
+          APP_URL: http://localhost:3333
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54332/postgres
+          JWT_SECRET: ci-placeholder-not-a-real-secret-0000000000
+        run: pnpm --filter ./apps/api run test
