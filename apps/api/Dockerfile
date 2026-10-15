@@ -54,5 +54,6 @@ EXPOSE 3333
 ENV NODE_ENV=production
 ENV PORT=3333
 
+# AdonisJS builds the HTTP entry point to build/bin/server.js.
 WORKDIR /app/apps/api/build
-CMD ["node", "server.js"]
+CMD ["node", "bin/server.js"]

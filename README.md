@@ -103,8 +103,10 @@ Manage your whole workspace from the root using these fast, Mise-managed command
 - **`mise run dev`**: Spin up both frontend and backend development environments in parallel.
 - **`mise run build`**: Compile all workspace packages and application targets.
 - **`mise run format`**: Format all codebase folders instantly using Biome.
-- **`mise run test`**: Execute the Japa integration test suite on the backend.
+- **`mise run test`**: Execute the Japa integration test suite on the backend (start local Supabase first: `mise run db:start`).
 - **`mise run typecheck`**: Run static TypeScript analysis across all workspaces.
+- **`mise run generate`**: Regenerate the committed generated files (API codegen, contracts, route tree, agent skills). CI fails if they are stale.
+- **`mise run db:types`**: Regenerate the Kysely database types after a migration.
 
 ---
 

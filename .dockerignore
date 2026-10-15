@@ -1,0 +1,31 @@
+# Keep the Docker build context small and free of anything local.
+# Dependencies are installed inside the image from pnpm-lock.yaml.
+**/node_modules
+.pnpm-store
+.git
+
+# Build output — rebuilt inside the image.
+**/dist
+**/build
+**/.output
+**/.tanstack
+**/*.tsbuildinfo
+
+# Local environment files hold real values and must never enter an image.
+# Containers get their configuration at runtime instead.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Tooling and state that no image needs.
+.claude
+.cursor
+.opencode
+.github
+.ci
+docs
+openspec
+tools/infra
+**/.terraform
+**/*.tfstate*
+**/.temp
