@@ -5,7 +5,9 @@ NODE_ENV = "development"
 node = "22"
 pnpm = "9"
 biome = "latest"
-supabase = "latest"
+# Pinned to match CI (.github/workflows/database.yml, infrastructure*.yml).
+supabase = "2.113.0"
+opentofu = "1.10.10"
 "npm:@fission-ai/openspec" = "1.3.1"
 docker-compose = "latest"
 

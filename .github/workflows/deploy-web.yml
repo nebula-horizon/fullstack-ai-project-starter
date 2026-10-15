@@ -1,0 +1,31 @@
+# Deploy apps/web. push to dev → dev account; push to main → prod (gated).
+name: deploy-web
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**' # this app imports shared packages, so they redeploy it
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.ci/scripts/health-check.sh'
+      - '.github/workflows/deploy-web.yml'
+      - '.github/workflows/deploy-ecs-app.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-ecs-app.yml
+    with:
+      app: web
+      health-path: /

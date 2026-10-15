@@ -16,6 +16,14 @@ RUN apk update && apk upgrade --no-cache && \
 # Install pnpm and dependencies
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
+# Public, per-environment Supabase values. Vite compiles VITE_* into the
+# browser bundle at build time, so each environment gets its own image.
+# Only PUBLIC values belong here — never the service-role key.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
+    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 # Build shared dependencies and web app
 RUN pnpm --filter @template/db run build
 RUN pnpm --filter @template/contracts run build
@@ -53,4 +61,5 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 WORKDIR /app/apps/web
-CMD ["pnpm", "run", "start", "--host", "0.0.0.0"]
+# `vite preview` defaults to port 4173; pin it to the port the image exposes.
+CMD ["pnpm", "run", "start", "--host", "0.0.0.0", "--port", "3000"]

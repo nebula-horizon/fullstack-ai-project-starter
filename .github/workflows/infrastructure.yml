@@ -1,0 +1,171 @@
+# OpenTofu for tools/infra/aws: validate everywhere, plan on pull requests,
+# apply the reviewed plan on push. Kept apart from the app deploy workflows so
+# app commits never queue an infra plan and infra changes never rebuild apps.
+# See docs/deployment/aws.md.
+name: infrastructure
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'tools/infra/**'
+      - '.ci/scripts/check-protected-resources.sh'
+      - '.github/workflows/infrastructure.yml'
+  push:
+    branches: [dev, main] # dev → dev account, main → prod account
+    paths:
+      - 'tools/infra/**'
+      - '.ci/scripts/check-protected-resources.sh'
+      - '.github/workflows/infrastructure.yml'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Manual plan, or apply for recovery. Prod apply is still gated.
+        type: choice
+        options: [plan, apply]
+        default: plan
+
+# One run per ref at a time, and never cancel one: an apply interrupted halfway
+# leaves the state file out of step with what actually exists.
+concurrency:
+  group: infrastructure-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write # needed to request a GitHub OIDC token for AWS
+  contents: read
+  pull-requests: write # the plan is posted on the pull request for review
+
+# `run:` steps execute inside tools/infra/aws. Action steps (`uses:`) do not
+# honour this default, so their paths are written from the repository root.
+defaults:
+  run:
+    working-directory: tools/infra/aws
+
+env:
+  TOFU_VERSION: 1.10.10 # pinned; keep in step with mise.toml
+
+jobs:
+  # No AWS needed: formatting, HCL lint and validation run everywhere,
+  # including the starter template itself.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+          tofu_wrapper: false
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.53.0 # HCL linting; pinned
+      - run: tofu fmt -check -recursive
+      - run: |
+          tflint --init
+          tflint --recursive --format compact
+      - run: |
+          tofu init -input=false -backend=false
+          tofu validate
+
+  plan:
+    needs: validate
+    # The template repository itself has no AWS accounts, so jobs that reach AWS
+    # are skipped there. Every project created from it has another name, so they
+    # run — and fail closed — until its Environments are configured.
+    if: github.repository != 'nebula-horizon/fullstack-ai-project-starter'
+    runs-on: ubuntu-latest
+    # Pull-request runs see github.ref as refs/pull/<n>/merge, so the target
+    # branch comes from github.base_ref: anything aimed at or pushed to main
+    # plans against prod, everything else against dev. The *-plan Environments
+    # have no approval rule, so a plan is produced immediately.
+    environment: ${{ (github.base_ref == 'main' || github.ref == 'refs/heads/main') && 'prod-plan' || 'dev-plan' }}
+    env:
+      ENV: ${{ (github.base_ref == 'main' || github.ref == 'refs/heads/main') && 'prod' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+          tofu_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }} # read-only
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: |
+          tofu init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${ENV}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true"
+          tofu validate
+          tofu plan -input=false -var-file="environments/${ENV}.tfvars" -out=tfplan
+          tofu show -no-color tfplan > plan.txt
+      - run: '"${GITHUB_WORKSPACE}/.ci/scripts/check-protected-resources.sh" tfplan'
+      - name: Post plan on the PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN_ENV: ${{ env.ENV }}
+        with:
+          script: |
+            const fs = require('fs')
+            const full = fs.readFileSync('tools/infra/aws/plan.txt', 'utf8')
+            const max = 60000
+            const plan = full.length > max ? full.slice(0, max) + '\n… truncated — see the workflow log' : full
+            const summary = (full.match(/^Plan: .*$/m) || ['No changes.'])[0]
+            const body = [
+              `### OpenTofu plan — \`${process.env.PLAN_ENV}\``,
+              `**${summary}** Read the summary first, then every \`-\` and \`-/+\`.`,
+              '<details><summary>Full plan</summary>',
+              '',
+              '```text',
+              plan,
+              '```',
+              '</details>',
+            ].join('\n')
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body })
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tools/infra/aws/tfplan # `uses:` steps ignore defaults.run, so give the full path
+          # Anyone who can read the repository can download this artifact, and it
+          # describes the environment in detail, so keep it only briefly.
+          retention-days: 5
+
+  apply:
+    needs: plan
+    # Runs on push, and on a manual dispatch with action=apply (recovery).
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+    runs-on: ubuntu-latest
+    # `prod` carries the required reviewer: this job pauses for approval.
+    # Restrict each Environment's deployment branches (dev → dev, prod → main)
+    # so a dispatch from a feature branch cannot reach either.
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    env:
+      ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+          tofu_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }} # the apply role, not the plan role
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: |
+          tofu init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${ENV}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true"
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: tools/infra/aws
+      # Apply exactly the plan that was reviewed — recomputing it here could differ.
+      - run: tofu apply -input=false -auto-approve tfplan
+      - name: Post-apply health check
+        run: |
+          BASE_URL="$(aws ssm get-parameter --name "/${{ vars.PRODUCT }}/${ENV}/deploy/base-url" --query Parameter.Value --output text)"
+          "${GITHUB_WORKSPACE}/.ci/scripts/health-check.sh" "${BASE_URL}/health" 10 15

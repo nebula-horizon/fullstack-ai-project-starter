@@ -1,0 +1,118 @@
+# Reusable: build one app's image, push it to ECR, roll its ECS service, and
+# health-check it. Called by deploy-api.yml and deploy-web.yml — one workflow
+# per app, one copy of the steps.
+#
+# This workflow decides what runs (image + task-definition revision); OpenTofu
+# decides how it runs (size, network, roles). Resource names come from SSM,
+# written by tools/infra/aws/ssm-config.tf — never hard-coded here.
+name: deploy-ecs-app
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: App directory name under apps/ (web | api)
+        type: string
+        required: true
+      health-path:
+        description: Path appended to the environment base URL for the post-deploy check
+        type: string
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    # The template repository itself has no AWS accounts, so jobs that reach AWS
+    # are skipped there. Every project created from it has another name, so they
+    # run — and fail closed — until its Environments are configured.
+    if: github.repository != 'nebula-horizon/fullstack-ai-project-starter'
+    runs-on: ubuntu-latest
+    # dev applies on merge; prod pauses for the required reviewer.
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    env:
+      ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      APP: ${{ inputs.app }}
+      SSM: /${{ vars.PRODUCT }}/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }} # narrow deploy role, not the infra apply role
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Resolve resource names from SSM
+        id: names
+        run: |
+          get() { aws ssm get-parameter --name "${SSM}/$1" --query Parameter.Value --output text; }
+          {
+            echo "cluster=$(get deploy/ecs-cluster)"
+            echo "service=$(get "deploy/${APP}/ecs-service")"
+            echo "family=$(get "deploy/${APP}/task-family")"
+            echo "repository=$(get "deploy/${APP}/ecr-repository")"
+            echo "container=$(get "deploy/${APP}/container-name")"
+            echo "base_url=$(get deploy/base-url)"
+          } >> "$GITHUB_OUTPUT"
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Vite compiles VITE_* into the bundle at build time, so the web image is
+      # built per environment: the URL from SSM, the anon key from Secrets
+      # Manager. The
+      # service-role key is never read here — the deploy role cannot read it.
+      - name: Build args (web only)
+        id: buildargs
+        if: inputs.app == 'web'
+        run: |
+          get() { aws ssm get-parameter --name "${SSM}/$1" --query Parameter.Value --output text; }
+          SECRET_ARN="$(get deploy/web-build-secret-arn)"
+          ANON_KEY="$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .SUPABASE_ANON_KEY)"
+          if [[ -z "$ANON_KEY" || "$ANON_KEY" == "null" ]]; then
+            echo "::error::${SSM} web-build secret has no SUPABASE_ANON_KEY yet — an admin must set it out of band."
+            exit 1
+          fi
+          echo "::add-mask::$ANON_KEY"
+          {
+            echo "args<<EOF"
+            echo "--build-arg VITE_SUPABASE_URL=$(get supabase/url)"
+            echo "--build-arg VITE_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image (immutable tag = commit SHA)
+        id: image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ steps.names.outputs.repository }}:${{ github.sha }}
+          BUILD_ARGS: ${{ steps.buildargs.outputs.args }}
+        run: |
+          # shellcheck disable=SC2086 # BUILD_ARGS is intentionally word-split
+          docker build -f "apps/${APP}/Dockerfile" ${BUILD_ARGS} -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the latest task definition (carries OpenTofu's shell settings)
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ steps.names.outputs.family }}" \
+            --query taskDefinition > task-definition.json
+
+      - id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ steps.names.outputs.container }}
+          image: ${{ steps.image.outputs.image }}
+
+      - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          cluster: ${{ steps.names.outputs.cluster }}
+          service: ${{ steps.names.outputs.service }}
+          wait-for-service-stability: true
+
+      - name: Post-deploy health check
+        run: .ci/scripts/health-check.sh "${{ steps.names.outputs.base_url }}${{ inputs.health-path }}"
