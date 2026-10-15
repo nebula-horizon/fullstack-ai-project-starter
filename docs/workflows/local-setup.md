@@ -18,7 +18,7 @@ mise trust && mise install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 
-pnpm install                                   # also links .claude/{skills,commands} → .agents
+pnpm install
 (cd apps/api && node --import tsx ace.js generate:key)   # per-machine APP_KEY into apps/api/.env
 
 mise run db:start                              # local Supabase: Postgres, Auth, Studio
@@ -40,6 +40,7 @@ Local ports: Postgres `127.0.0.1:54332`, Supabase API `http://127.0.0.1:54326`, 
 ## 3. Notes
 
 - Personal editor files (`.vscode/`, `.idea/`) belong in your **global** gitignore, not the repo's.
-- **Upgrading an older clone:** `.claude` used to be a symlink to `.agents`. Before pulling, run
-  `rm .claude` (on Windows, `rmdir .claude`), then `pnpm install` to recreate the links inside a real
-  `.claude/` directory.
+- **Agent skills and commands** are committed for each tool: `.claude/` (Claude Code), `.cursor/`
+  and `.opencode/`. They work straight from a fresh clone; see [generated-files.md](./generated-files.md).
+- **Upgrading an older clone:** `.claude` used to be a symlink to `.agents/`. Before pulling, remove
+  the link (`rm .claude`, or `rmdir .claude` on Windows) so git can create the real directory.

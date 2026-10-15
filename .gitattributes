@@ -4,3 +4,7 @@ apps/api/.adonisjs/** linguist-generated=true
 packages/contracts/src/api.d.ts linguist-generated=true
 apps/web/src/routeTree.gen.ts linguist-generated=true
 pnpm-lock.yaml linguist-generated=true
+.claude/skills/openspec-*/** linguist-generated=true
+.claude/commands/opsx/** linguist-generated=true
+.cursor/** linguist-generated=true
+.opencode/** linguist-generated=true

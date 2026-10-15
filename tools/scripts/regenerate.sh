@@ -27,6 +27,12 @@ cd "$(git rev-parse --show-toplevel)"
 # 2. packages/contracts/src/api.d.ts — from packages/contracts/openapi.yaml.
 pnpm --filter @template/contracts run build
 
-# 3. apps/web/src/routeTree.gen.ts — the TanStack Router plugin rewrites it on
+# 3. Agent skills and commands (.claude/, .cursor/, .opencode/) — each tool
+#    needs its own format, so OpenSpec generates one copy per tool. Re-running
+#    init is idempotent and leaves openspec/config.yaml alone.
+# Same version as mise.toml ("npm:@fission-ai/openspec").
+pnpm dlx @fission-ai/openspec@1.3.1 init --tools claude,cursor,opencode --force . >/dev/null
+
+# 4. apps/web/src/routeTree.gen.ts — the TanStack Router plugin rewrites it on
 #    every build; the build output itself is discarded (dist/ is ignored).
 pnpm --filter @template/web run build

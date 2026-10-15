@@ -1,6 +1,6 @@
 # ⚙️ Generated Files
 
-Most tool output stays out of git. Three generated outputs are committed on purpose, each for a
+Most tool output stays out of git. These generated outputs are committed on purpose, each for a
 stated reason, and CI keeps them honest: the `ci` workflow runs `tools/scripts/regenerate.sh` and
 fails if anything changes.
 
@@ -9,18 +9,19 @@ fails if anything changes.
 | `apps/api/.adonisjs/**` | `node ace codegen` (AdonisJS) | The API's typecheck and tests import it, and producing it boots the app config, which needs a full environment. Committing it lets a fresh clone typecheck and test without one |
 | `packages/contracts/src/api.d.ts` | `openapi-typescript` from `packages/contracts/openapi.yaml` | The web client's types come from it; a fresh clone builds without running the generator first |
 | `apps/web/src/routeTree.gen.ts` | TanStack Router plugin, on every `vite` dev run and build | `tsc --noEmit` needs it before any build has run |
+| OpenSpec skills and commands in `.claude/`, `.cursor/`, `.opencode/` | `openspec init --tools claude,cursor,opencode` | Each agent reads only its own folder and format, so every agent works from a fresh clone with nothing to install. `.claude/skills/grill-me/` is hand-written |
 
-All three are excluded from Biome formatting and linting and marked `linguist-generated` in
-`.gitattributes`, so they never show up as hand-written diffs.
+The code files are excluded from Biome formatting and linting, and all of them are marked
+`linguist-generated` in `.gitattributes`, so they never show up as hand-written diffs.
 
 ## When you change their inputs
 
-Changed a route, a controller, an Adonis entity or `openapi.yaml`? Regenerate and commit the result
-in the same change:
+Changed a route, a controller, an Adonis entity, `openapi.yaml` or the OpenSpec version? Regenerate
+and commit the result in the same change:
 
 ```bash
 mise run generate
-git add apps/api/.adonisjs packages/contracts/src/api.d.ts apps/web/src/routeTree.gen.ts
+git add -A apps/api/.adonisjs packages/contracts/src/api.d.ts apps/web/src/routeTree.gen.ts .claude .cursor .opencode
 ```
 
 Never edit these files by hand; the next regeneration overwrites the edit.

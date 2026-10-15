@@ -50,11 +50,8 @@ id_rsa*
 .DS_Store
 Thumbs.db
 
-# Claude Code. `pnpm install` (scripts/bootstrap.js --link) links .claude/skills
-# and .claude/commands to .agents/, the tracked source; the links, personal
-# settings and saved workflows stay out of git. Anchored with a leading slash
+# Claude Code. .claude/skills and .claude/commands are tracked; personal
+# settings and saved workflows are per-machine. Anchored with a leading slash
 # because they only ever exist at the repository root.
-/.claude/skills
-/.claude/commands
 /.claude/workflows/
-.claude/settings.local.json
+/.claude/settings.local.json
