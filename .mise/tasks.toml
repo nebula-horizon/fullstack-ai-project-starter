@@ -30,6 +30,10 @@ run = "biome lint . --write"
 description = "Type check all packages"
 run = "pnpm -r run typecheck"
 
+["generate"]
+description = "Regenerate committed generated files (API codegen, contracts, route tree)"
+run = "tools/scripts/regenerate.sh"
+
 ["db:start"]
 description = "Start the local Supabase container stack"
 run = "supabase start --workdir tools"
