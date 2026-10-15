@@ -1,26 +1,11 @@
-version: '3.8'
+# Optional: run the API and web app in containers. The database is NOT here —
+# start the Supabase CLI stack first (`mise run db:start`); it is the only local
+# Postgres, on the same major version as hosted Supabase. The containers reach it
+# through host.docker.internal.
+#
+# Most day-to-day work uses `mise run dev` instead; see docs/workflows/local-setup.md.
 
 services:
-  # ── Local Postgres Database (Supabase compatible) ──────────────────────────
-  database:
-    image: postgres:15-alpine
-    container_name: fullstack_db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-    ports:
-      - "54332:5432" # Maps standard container port 5432 to our offset 54332
-    volumes:
-      - fullstack_db_data:/var/lib/postgresql/data
-    networks:
-      - fullstack_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   api:
     build:
       context: .
@@ -34,14 +19,15 @@ services:
       - /app/apps/api/node_modules
     env_file:
       - apps/api/.env
+    environment:
+      # Inside the container, 127.0.0.1 is the container itself, so point at the host.
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:54332/postgres
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - fullstack_network
     command: pnpm run dev
-    depends_on:
-      database:
-        condition: service_healthy
 
   web:
     build:
@@ -54,9 +40,12 @@ services:
       - .:/app
       - /app/node_modules
       - /app/apps/web/node_modules
-    # Web gets ONLY its own public VITE_* values — never the API's secrets.
+    # Web gets only its own browser-safe values — never the API's secrets.
     env_file:
       - apps/web/.env
+    environment:
+      # The dev proxy forwards /api to the api service on the compose network.
+      API_URL: http://api:3333
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -68,6 +57,3 @@ services:
 networks:
   fullstack_network:
     driver: bridge
-
-volumes:
-  fullstack_db_data:
