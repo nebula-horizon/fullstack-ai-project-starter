@@ -1,6 +1,6 @@
 ["init"]
 description = "Initialize your project"
-run = "node scripts/bootstrap.js"
+run = "node tools/scripts/bootstrap.js"
 
 ["dev"]
 description = "Start development servers across workspace"

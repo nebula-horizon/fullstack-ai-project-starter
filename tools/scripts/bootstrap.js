@@ -1,15 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from 'node:child_process'
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { stdin as input, stdout as output } from 'node:process'
 import { createInterface } from 'node:readline/promises'
@@ -18,7 +10,7 @@ import { parseArgs } from 'node:util'
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url)
 const __dirname = resolve(SCRIPT_PATH, '..')
-const ROOT_DIR = resolve(__dirname, '..')
+const ROOT_DIR = resolve(__dirname, '..', '..')
 const SENTINEL_FILE = join(ROOT_DIR, '.bootstrapped')
 const DEFAULT_PROJECT_NAME = 'vibe-saas'
 
@@ -26,7 +18,7 @@ const DEFAULT_PROJECT_NAME = 'vibe-saas'
 const KEBAB_CASE_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 // The shared, agent-agnostic build-journey playbook the chosen agent is told to read.
-const PLAYBOOK_PATH = '.agents/journey/build-app.md'
+const PLAYBOOK_PATH = 'tools/scripts/journey/build-app.md'
 
 // Per-agent adapter table: how to detect, launch, and run each supported coding
 // agent in full-auto mode. `autoFlag` is the agent's "stop asking me" flag.
@@ -69,55 +61,6 @@ const FILES_TO_UPDATE = [
   'README.md',
 ]
 
-// .agents/ is the tracked, agent-agnostic source for skills and commands.
-// .claude/ is a real directory, so Claude Code's own per-project files
-// (settings.local.json, saved workflows) stay there instead of landing in .agents/.
-// Only these subdirectories are linked into it; the links themselves are ignored.
-const CLAUDE_LINKED_DIRS = ['skills', 'commands']
-
-/**
- * Link .claude/<dir> → .agents/<dir> for each shared directory, as a junction
- * (Windows) or symlink (Unix). Junctions need no admin rights on Windows.
- * Migrates the old layout, where .claude itself was a link to .agents.
- * No-op for any entry that already exists.
- */
-function createClaudeLinks() {
-  const claudePath = join(ROOT_DIR, '.claude')
-
-  try {
-    if (lstatSync(claudePath).isSymbolicLink()) {
-      unlinkSync(claudePath) // old layout: the whole directory was a link
-      console.log('✓ Replaced old .claude → .agents link with a real directory')
-    }
-  } catch {
-    // .claude does not exist yet
-  }
-  mkdirSync(claudePath, { recursive: true })
-
-  for (const dir of CLAUDE_LINKED_DIRS) {
-    const linkPath = join(claudePath, dir)
-    try {
-      lstatSync(linkPath)
-      continue // already exists — symlink, junction, or real dir
-    } catch {
-      // doesn't exist yet, create it
-    }
-
-    try {
-      if (process.platform === 'win32') {
-        // junction requires absolute target and works without elevated privileges
-        symlinkSync(join(ROOT_DIR, '.agents', dir), linkPath, 'junction')
-      } else {
-        symlinkSync(join('..', '.agents', dir), linkPath, 'dir')
-      }
-      console.log(`✓ Created .claude/${dir} link → .agents/${dir}`)
-    } catch (err) {
-      console.warn(`⚠ Could not create .claude/${dir} link: ${err.message}`)
-      console.warn(`  Claude Code will not see the shared ${dir} until the link is created.`)
-    }
-  }
-}
-
 /**
  * Parse command-line arguments
  */
@@ -127,9 +70,6 @@ function parseCliArgs() {
       name: {
         type: 'string',
         short: 'n',
-      },
-      link: {
-        type: 'boolean',
       },
       help: {
         type: 'boolean',
@@ -142,7 +82,7 @@ function parseCliArgs() {
 
   if (values.help) {
     console.log(`
-Usage: node scripts/bootstrap.js [options]
+Usage: node tools/scripts/bootstrap.js [options]
 
 With no options in an interactive terminal, launches the guided journey:
 pick a coding agent, name your project, then hand off to the agent to build
@@ -150,13 +90,12 @@ your app. With --name (or in CI/headless), runs the rename engine only.
 
 Options:
   -n, --name <name>    Project name in kebab-case (rename-only, no agent launch)
-      --link           Link .claude/{skills,commands} → .agents only, then exit
   -h, --help          Display this help message
     `)
     process.exit(0)
   }
 
-  return { name: values.name, link: !!values.link }
+  return { name: values.name }
 }
 
 /**
@@ -313,7 +252,7 @@ function writeSentinel(projectName) {
  */
 function runPnpmInstall() {
   return new Promise((resolve, reject) => {
-    console.log('\n📦 Running pnpm install to rebuild symlinks...')
+    console.log('\n📦 Running pnpm install to update the lockfile for the new name...')
 
     const pnpmPath = resolveBin('pnpm')
     if (!pnpmPath) {
@@ -325,7 +264,9 @@ function runPnpmInstall() {
       return
     }
 
-    const pnpm = spawnBinary(pnpmPath, ['install'], {
+    // The rename changes workspace package names, so the committed lockfile must
+    // be rewritten; CI-mode pnpm would otherwise refuse with --frozen-lockfile.
+    const pnpm = spawnBinary(pnpmPath, ['install', '--no-frozen-lockfile'], {
       cwd: ROOT_DIR,
       stdio: 'pipe',
     })
@@ -569,7 +510,7 @@ async function renameMode(cliName) {
     console.log(`\n✨ Bootstrap complete! Your project "${projectName}" is ready to develop.`)
   } catch (err) {
     console.error(`\n⚠ Bootstrap succeeded but pnpm install failed: ${err.message}`)
-    console.error('Please run "pnpm install" manually to rebuild symlinks.')
+    console.error('Please run "pnpm install" manually.')
     process.exit(1)
   }
 }
@@ -639,11 +580,7 @@ async function launcherMode() {
  * Entry point: choose rename-only mode vs the interactive launcher journey.
  */
 async function bootstrap() {
-  const { name: cliName, link } = parseCliArgs()
-
-  createClaudeLinks()
-
-  if (link) return
+  const { name: cliName } = parseCliArgs()
 
   if (cliName !== undefined || isNonInteractive()) {
     await renameMode(cliName)

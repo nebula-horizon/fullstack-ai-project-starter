@@ -5,7 +5,6 @@
   "description": "Fullstack AI Project Starter - monorepo template",
   "type": "module",
   "scripts": {
-    "postinstall": "node scripts/bootstrap.js --link",
     "dev": "mise run dev",
     "build": "mise run build",
     "format": "mise run format",
