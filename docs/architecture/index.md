@@ -1,7 +1,8 @@
-# 📁 Architecture Specifications
+# 📁 Architecture
 
-This folder contains the permanent, long-term system architecture blueprints for the template.
+System design and the reasoning behind it.
 
 ## Documents Index
-- **[clean-backend-api.md](./clean-backend-api.md)**: Details the AdonisJS v6 Domain-driven design layers, Kysely database adapters, and dependency boundaries.
-- **[web-frontend-gateway.md](./web-frontend-gateway.md)**: Details the TanStack Start client-held JWT auth flow (Supabase sign-in, Bearer token attachment, dev API proxy, and profile provisioning).
+- **[overview.md](./overview.md)**: Diagram of the system's components and the reasoning behind the design.
+- **[clean-backend-api.md](./clean-backend-api.md)**: AdonisJS v6 domain layers, Kysely adapters, and dependency boundaries.
+- **[web-frontend-gateway.md](./web-frontend-gateway.md)**: TanStack Start client-held JWT auth flow: Supabase sign-in, Bearer token attachment, dev API proxy, profile provisioning.
