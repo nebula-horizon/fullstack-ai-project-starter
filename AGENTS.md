@@ -57,7 +57,7 @@ Follow these absolute rules to maintain the integrity of our codebase, prevent s
 - **Hardened Base Images**: Both frontend and backend Dockerfiles utilize **`node:22.22.3-alpine3.23`** as their production base.
 - **Explicit Global Overrides**: To protect against High-Severity CVEs (such as ReDoS vulnerabilities in JavaScript dependencies like `picomatch`), both Dockerfiles include explicit post-installation overrides:
   ```dockerfile
-  RUN npm install -g pnpm && pnpm install && pnpm add -g picomatch@4.0.4
+  RUN npm install -g pnpm@9.15.9 && pnpm install --frozen-lockfile && npm install -g picomatch@4.0.4
   ```
 - **No Path Leakage**: Never write absolute path mappings (like `/opt/homebrew/...` or your host system user paths) inside any scripts or build files. Always resolve binaries globally in the execution path.
 

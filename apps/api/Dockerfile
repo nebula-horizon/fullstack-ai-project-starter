@@ -14,7 +14,7 @@ RUN apk update && apk upgrade --no-cache && \
     apk add --no-cache make gcc g++ python3
 
 # Install pnpm and dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@9.15.9 && pnpm install --frozen-lockfile
 
 # Build shared dependencies and adonis
 RUN pnpm --filter @template/db run build
@@ -45,7 +45,7 @@ ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 
 # Install only production dependencies and patch global/local picomatch for CVE-2026-33671
-RUN npm install -g pnpm && \
+RUN npm install -g pnpm@9.15.9 && \
     pnpm install --frozen-lockfile && \
     npm install -g picomatch@4.0.4
 
