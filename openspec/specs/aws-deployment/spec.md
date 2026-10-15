@@ -53,7 +53,7 @@ OpenTofu SHALL own the ECS service shell (size, network, roles, env var names, s
 - **THEN** it SHALL NOT roll the service back to an older image
 
 ### Requirement: Secrets live in Secrets Manager, values set out of band
-Runtime and migration secrets SHALL live in AWS Secrets Manager. OpenTofu SHALL create only the secret containers, never a secret version, so no value enters git, a plan, GitHub, or the state file. Applications SHALL receive secret ARNs, resolved by ECS at task start.
+Runtime and migration secrets SHALL live in AWS Secrets Manager. OpenTofu SHALL create only the secret containers, never a secret version, so no value enters git, a plan, GitHub, or the state file. Applications SHALL receive secret ARNs, resolved by ECS at task start. No key SHALL be compiled into an image, so one image serves both environments.
 
 #### Scenario: New environment bootstrapped
 - **WHEN** an environment is applied for the first time

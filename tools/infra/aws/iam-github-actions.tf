@@ -201,12 +201,9 @@ data "aws_iam_policy_document" "deploy" {
     resources = ["arn:aws:ssm:${var.aws_region}:${var.aws_account_id}:parameter${local.ssm_prefix}/*"]
   }
   statement {
-    sid     = "ReadCiSecrets"
-    actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      aws_secretsmanager_secret.supabase_migrations.arn,
-      aws_secretsmanager_secret.web_build.arn,
-    ]
+    sid       = "ReadMigrationSecret"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.supabase_migrations.arn]
   }
 }
 

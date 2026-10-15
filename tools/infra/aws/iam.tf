@@ -27,12 +27,21 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_managed" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-# Only the API's execution role can read the API's runtime secret. The web
-# execution role gets nothing beyond image pull and logs.
-data "aws_iam_policy_document" "api_execution_secrets" {
+# Each execution role reads only its own app's secret: the API's role can read
+# api-runtime (including the service-role key); the web role only web-runtime.
+locals {
+  execution_secret_arns = {
+    api = aws_secretsmanager_secret.api_runtime.arn
+    web = aws_secretsmanager_secret.web_runtime.arn
+  }
+}
+
+data "aws_iam_policy_document" "execution_secrets" {
+  for_each = local.apps
+
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.api_runtime.arn]
+    resources = [local.execution_secret_arns[each.key]]
   }
   statement {
     actions   = ["ssm:GetParameters"]
@@ -40,10 +49,12 @@ data "aws_iam_policy_document" "api_execution_secrets" {
   }
 }
 
-resource "aws_iam_role_policy" "api_execution_secrets" {
+resource "aws_iam_role_policy" "execution_secrets" {
+  for_each = local.apps
+
   name   = "read-runtime-secrets"
-  role   = aws_iam_role.ecs_execution["api"].id
-  policy = data.aws_iam_policy_document.api_execution_secrets.json
+  role   = aws_iam_role.ecs_execution[each.key].id
+  policy = data.aws_iam_policy_document.execution_secrets[each.key].json
 }
 
 resource "aws_iam_role" "ecs_task" {

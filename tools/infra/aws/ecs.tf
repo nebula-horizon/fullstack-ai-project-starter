@@ -50,7 +50,11 @@ locals {
   # Only ARNs travel through IaC — never values. ECS resolves them at task
   # start; rotating a value then needs a service restart, not a code change.
   container_secrets = {
-    web = {} # the browser bundle is public; web gets no secrets at all
+    # Web gets only browser-safe values, read at runtime — never the service-role key.
+    web = {
+      SUPABASE_ANON_KEY = "${aws_secretsmanager_secret.web_runtime.arn}:SUPABASE_ANON_KEY::"
+      SUPABASE_URL      = aws_ssm_parameter.supabase["url"].arn
+    }
     api = {
       APP_KEY                   = "${aws_secretsmanager_secret.api_runtime.arn}:APP_KEY::"
       DATABASE_URL              = "${aws_secretsmanager_secret.api_runtime.arn}:DATABASE_URL::"

@@ -35,7 +35,10 @@ Why it is shaped this way:
 - **One ALB, same paths as local.** The browser always calls relative `/api/*`, locally through the
   Vite proxy and deployed through the ALB, so that no environment-specific URL lives in app code
   and dev stays a faithful rehearsal of prod.
-- **The web app holds no secrets.** Everything it ships is public, so that a leaked bundle leaks
-  nothing. Only the API reads secrets ([security/secrets-inventory.md](../security/secrets-inventory.md)).
+- **The web app holds only browser-safe keys, and reads them at runtime.** The web server gets the
+  Supabase URL and anon key from its environment when the task starts and hands them to the page
+  (`apps/web/src/utils/public-config.ts`), so one image runs in every environment and no key is
+  baked into it. Only the API holds real secrets such as the service-role key
+  ([security/secrets-inventory.md](../security/secrets-inventory.md)).
 - **Supabase does auth and storage, the API does business logic.** Users authenticate directly
   against Supabase, and the API trusts only a verified JWT, so that the API never handles passwords.

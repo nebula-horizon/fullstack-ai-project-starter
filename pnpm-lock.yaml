@@ -166,6 +166,9 @@ importers:
       '@types/js-cookie':
         specifier: ^3.0.6
         version: 3.0.6
+      '@types/node':
+        specifier: ~25.6.0
+        version: 25.6.2
       '@types/react':
         specifier: ^19.0.8
         version: 19.3.0

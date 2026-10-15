@@ -11,7 +11,7 @@
 # Value contract (set with `aws secretsmanager put-secret-value`, JSON):
 #   api-runtime          {"APP_KEY","DATABASE_URL","JWT_SECRET","SUPABASE_SERVICE_ROLE_KEY"}
 #   supabase-migrations  {"DATABASE_URL"}
-#   web-build            {"SUPABASE_ANON_KEY"}
+#   web-runtime          {"SUPABASE_ANON_KEY"}
 # The API's ECS tasks cannot start until api-runtime holds a value; on a new
 # environment, apply first, then write the values, then deploy the apps.
 
@@ -41,13 +41,13 @@ resource "aws_secretsmanager_secret" "supabase_migrations" {
   }
 }
 
-# Read ONLY by deploy-web at image build time. Every Supabase key is kept in
+# Read by the web app's ECS tasks at start. Every Supabase key is kept in
 # Secrets Manager, the anon key included, even though Supabase designs it to be
-# public: Vite compiles it into the browser bundle, which is why it is read at
-# BUILD time rather than at runtime.
-resource "aws_secretsmanager_secret" "web_build" {
-  name        = "${local.name_prefix}/web-build"
-  description = "Supabase anon key compiled into apps/web. Owner: <team-frontend>. Never the service-role key."
+# usable in a browser: the web server hands it to the page at runtime, so it is
+# never baked into an image.
+resource "aws_secretsmanager_secret" "web_runtime" {
+  name        = "${local.name_prefix}/web-runtime"
+  description = "Supabase anon key for apps/web. Owner: <team-frontend>. Never the service-role key."
 
   recovery_window_in_days = var.environment == "prod" ? 30 : 0
 

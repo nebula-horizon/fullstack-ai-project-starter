@@ -60,37 +60,14 @@ jobs:
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Vite compiles VITE_* into the bundle at build time, so the web image is
-      # built per environment: the URL from SSM, the anon key from Secrets
-      # Manager. The
-      # service-role key is never read here — the deploy role cannot read it.
-      - name: Build args (web only)
-        id: buildargs
-        if: inputs.app == 'web'
-        run: |
-          get() { aws ssm get-parameter --name "${SSM}/$1" --query Parameter.Value --output text; }
-          SECRET_ARN="$(get deploy/web-build-secret-arn)"
-          ANON_KEY="$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .SUPABASE_ANON_KEY)"
-          if [[ -z "$ANON_KEY" || "$ANON_KEY" == "null" ]]; then
-            echo "::error::${SSM} web-build secret has no SUPABASE_ANON_KEY yet — an admin must set it out of band."
-            exit 1
-          fi
-          echo "::add-mask::$ANON_KEY"
-          {
-            echo "args<<EOF"
-            echo "--build-arg VITE_SUPABASE_URL=$(get supabase/url)"
-            echo "--build-arg VITE_SUPABASE_ANON_KEY=$ANON_KEY"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Build and push image (immutable tag = commit SHA)
         id: image
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ steps.names.outputs.repository }}:${{ github.sha }}
-          BUILD_ARGS: ${{ steps.buildargs.outputs.args }}
         run: |
-          # shellcheck disable=SC2086 # BUILD_ARGS is intentionally word-split
-          docker build -f "apps/${APP}/Dockerfile" ${BUILD_ARGS} -t "$IMAGE" .
+          # No environment-specific build args: config and keys are injected by
+          # ECS when the task starts, so the same image works in dev and prod.
+          docker build -f "apps/${APP}/Dockerfile" -t "$IMAGE" .
           docker push "$IMAGE"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 

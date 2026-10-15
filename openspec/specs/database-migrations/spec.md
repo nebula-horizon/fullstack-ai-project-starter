@@ -41,7 +41,7 @@ The Supabase service-role key SHALL exist only in the API's Secrets Manager secr
 
 #### Scenario: Web image is built
 - **WHEN** `deploy-web` builds the web image
-- **THEN** it SHALL pass only the Supabase URL and anon key as build arguments
+- **THEN** it SHALL pass no Supabase value at all; the web server reads the URL and anon key from its environment at runtime
 
 ### Requirement: Backward-compatible migrations
 Because migrations and app deploys run as separate workflows, each migration SHALL be compatible with the app version currently running (expand first, deploy, then contract in a later change).

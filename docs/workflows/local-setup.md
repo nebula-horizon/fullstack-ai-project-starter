@@ -25,8 +25,9 @@ mise run db:start                              # local Supabase: Postgres, Auth,
 mise run db:status                             # prints the local URL and anon key
 ```
 
-Put the local anon key from `db:status` into `apps/web/.env` as `VITE_SUPABASE_ANON_KEY`. Never put
-the service-role key in `apps/web` ([security/secrets-inventory.md](../security/secrets-inventory.md)).
+Put the local anon key from `db:status` into `apps/web/.env` as `SUPABASE_ANON_KEY`. The web server
+reads it at runtime and hands it to the browser; it is never compiled into the bundle. Never put the
+service-role key in `apps/web` ([security/secrets-inventory.md](../security/secrets-inventory.md)).
 
 ```bash
 mise run db:reset    # apply every migration to the local DB

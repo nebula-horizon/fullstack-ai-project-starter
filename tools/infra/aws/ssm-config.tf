@@ -26,7 +26,6 @@ locals {
       "base-url"              = "https://${var.app_domain}"
       "ecs-cluster"           = aws_ecs_cluster.main.name
       "migrations-secret-arn" = aws_secretsmanager_secret.supabase_migrations.arn
-      "web-build-secret-arn"  = aws_secretsmanager_secret.web_build.arn
     },
     merge([
       for app in keys(local.apps) : {

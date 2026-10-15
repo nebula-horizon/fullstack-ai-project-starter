@@ -14,9 +14,10 @@ responders use it to see what needs rotating.
 | `DATABASE_URL` (API) | Supabase Postgres via the pooler | `apps/api/.env` (local CLI default) | `…/api-runtime` → `DATABASE_URL` | API | `<team-backend>` |
 | `JWT_SECRET` | Verifies Supabase access tokens; anyone holding it can mint them | `apps/api/.env` (local CLI default) | `…/api-runtime` → `JWT_SECRET` | API | `<team-backend>` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Full Supabase access, **bypasses row-level security** | `apps/api/.env`, optional | `…/api-runtime` → `SUPABASE_SERVICE_ROLE_KEY` | API only | `<team-backend>` |
-| `SUPABASE_ANON_KEY` | Public Supabase client access (RLS applies) | `apps/web/.env` as `VITE_SUPABASE_ANON_KEY` | Secrets Manager `<product>-<env>/web-build` → `SUPABASE_ANON_KEY` | `deploy-web` at image build | `<team-frontend>` |
+| `SUPABASE_ANON_KEY` | Browser Supabase client access (RLS applies) | `apps/web/.env` | Secrets Manager `<product>-<env>/web-runtime` → `SUPABASE_ANON_KEY` | Web (ECS, by ARN), handed to the browser at runtime | `<team-frontend>` |
 | `DATABASE_URL` (migrations) | Supabase Postgres, schema changes | — (local uses the CLI) | Secrets Manager `<product>-<env>/supabase-migrations` → `DATABASE_URL` | `database.yml` only | `<team-platform>` |
-| Supabase URL *(not secret)* | — | `apps/*/.env` | SSM `/<product>/<env>/supabase/url` | API (ECS), `deploy-web` | `<team-platform>` |
+| `SUPABASE_URL` *(not secret)* | — | `apps/*/.env` | SSM `/<product>/<env>/supabase/url` | API and web (ECS) | `<team-platform>` |
+| `<NAME>` *(template: copy this row for each new secret)* | `<what it unlocks>` | `<which .env, or —>` | `<store and path, per environment>` | `<which app or job>` | `<team>` |
 
 GitHub holds **no** secrets for this product: CI reaches AWS through OIDC, with only role ARNs as
 variables.
@@ -27,9 +28,11 @@ variables.
   with `aws secretsmanager put-secret-value` in their own shell, never through chat, a ticket, a PR or
   an AI session. OpenTofu creates the empty containers only (`tools/infra/aws/secrets.tf`), so
   values never reach git, a plan or the state file.
+- **Every key is read at runtime, from the secrets store.** ECS resolves each ARN when a task starts;
+  nothing is baked into an image, so rotating a value needs a restart, not a rebuild.
 - **The service-role key never reaches the browser.** It is not in `apps/web`, any `VITE_*`
   variable, a Docker build arg, or the web task definition, because it bypasses row-level security.
-  Only the API's execution role can read `api-runtime`.
+  Only the API's execution role can read `api-runtime`; the web's role can read only `web-runtime`.
 - **Only dev values outside production.** Local `.env` files, the dev environment and any AI agent's
   environment never contain a production value
   ([production-access.md](./production-access.md)).
@@ -41,6 +44,6 @@ variables.
 - **Add:** add the container in `tools/infra/aws/secrets.tf`, its name to the matching
   `.env.example`, and a row above, in one PR. After CI applies it, the owner writes the value.
 - **Rotate:** every 90 days, the same day someone with access leaves, and immediately on exposure.
-  Rotate in Supabase, write the new value, then redeploy the reader (the API restarts to pick it up;
-  web needs a rebuild for the anon key).
+  Rotate in Supabase, write the new value, then restart the reader (force a new ECS deployment;
+  no rebuild needed).
 - **Exposed:** rotate first, then check access logs for the old value, then clean up. Deleting it from git does not make it safe.

@@ -20,7 +20,7 @@ output "secret_arns" {
   value = {
     api_runtime         = aws_secretsmanager_secret.api_runtime.arn
     supabase_migrations = aws_secretsmanager_secret.supabase_migrations.arn
-    web_build           = aws_secretsmanager_secret.web_build.arn
+    web_runtime         = aws_secretsmanager_secret.web_runtime.arn
   }
 }
 

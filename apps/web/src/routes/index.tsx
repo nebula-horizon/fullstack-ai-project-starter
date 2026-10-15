@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowRight, LogOut, ShieldAlert, User as UserIcon } from 'lucide-react'
 import { $api } from '@/utils/api'
 import { useAuth } from '@/utils/auth'
-import { supabase } from '@/utils/supabase'
+import { getSupabase } from '@/utils/supabase'
 
 export const Route = createFileRoute('/')({
   component: IndexPage,
@@ -29,7 +29,7 @@ function IndexPage() {
   )
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await getSupabase().auth.signOut()
     logout()
     navigate({ to: '/login' })
   }
