@@ -14,8 +14,8 @@ environment. How to change the schema is in
 A trigger (`on_auth_user_created`) creates the `profiles` row whenever Supabase Auth creates a user,
 so that every signed-in user already has a profile for `/api/v1/users/me`.
 
-The Kysely types for these tables are `packages/db/src/types.ts`, maintained by hand for now (see the
-migrations recipe).
+The Kysely types for these tables are `packages/db/src/types.ts`, generated from the migrated schema
+(see the migrations recipe).
 
 ## 2. Environments: one Supabase account each
 

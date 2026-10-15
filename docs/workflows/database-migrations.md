@@ -54,10 +54,17 @@ Resets the local database and applies every migration in order.
 
 ## 3. TypeScript Types
 
-`packages/db/src/types.ts` is the Kysely `Database` interface the API queries against. **Today it is
-maintained by hand.** `mise run db:types` emits Supabase's own type format, which is not
-Kysely-shaped, so running it overwrites the file with types the API cannot use. Until a
-Kysely-emitting generator is wired in, update `types.ts` by hand in the same PR as the migration.
+`packages/db/src/types.ts` is the Kysely schema the API queries against. It is **generated** from the
+migrated local database by `kysely-codegen`, so after every migration:
+
+```bash
+mise run db:reset    # apply all migrations locally
+mise run db:types    # regenerate packages/db/src/types.ts
+```
+
+Commit the regenerated file in the same PR as the migration. The `database` workflow regenerates it
+on every PR and fails if the committed copy is stale. Timestamps are typed as `Date`, which is what
+the Postgres driver returns.
 
 ---
 

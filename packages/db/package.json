@@ -17,10 +17,16 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",
-    "gen-types": "supabase gen types typescript --local --workdir ../../tools > src/types.ts"
+    "gen-types": "kysely-codegen --dialect postgres --include-pattern 'public.*' --out-file src/types.ts --url 'env(TYPES_DATABASE_URL)'"
   },
   "devDependencies": {
+    "kysely": "^0.27.3",
+    "kysely-codegen": "^0.20.0",
+    "pg": "^8.23.1",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "kysely": "^0.27.3"
   }
 }

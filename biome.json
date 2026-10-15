@@ -16,7 +16,8 @@
         "**/.vinxi/**",
         "**/.adonisjs/**",
         "**/routeTree.gen.ts",
-        "packages/contracts/src/api.d.ts"
+        "packages/contracts/src/api.d.ts",
+        "packages/db/src/types.ts"
       ],
       "linter": {
         "enabled": false

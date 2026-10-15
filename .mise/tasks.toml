@@ -51,5 +51,6 @@ description = "Reset the local database and re-apply all SQL migrations"
 run = "supabase db reset --workdir tools"
 
 ["db:types"]
-description = "Re-generate TypeScript types from local Supabase Postgres"
+description = "Regenerate packages/db/src/types.ts (Kysely) from the local Supabase Postgres"
+env = { TYPES_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:54332/postgres" }
 run = "pnpm --filter ./packages/db run gen-types"

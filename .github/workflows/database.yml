@@ -2,7 +2,8 @@
 # CI only — never from a laptop. See docs/workflows/database-migrations.md.
 #
 #   pull request  verify on a throwaway local Postgres (no cloud credentials):
-#                 every migration applies from scratch and the schema lints clean
+#                 every migration applies from scratch, the schema lints clean,
+#                 and packages/db/src/types.ts matches it
 #   push to dev   dry-run, then apply to the DEV Supabase account (automatic)
 #   push to main  dry-run, then apply to the PROD Supabase account — the job
 #                 declares the `prod` Environment, so it waits for a reviewer
@@ -17,6 +18,7 @@ on:
     branches: [dev, main]
     paths:
       - 'tools/supabase/**'
+      - 'packages/db/**'
       - '.github/workflows/database.yml'
   push:
     branches: [dev, main]
@@ -51,9 +53,21 @@ jobs:
         run: supabase db start --workdir tools
       - name: Lint the schema
         run: supabase db lint --workdir tools --local --fail-on error
-      # No generated-types drift check yet: packages/db/src/types.ts is a
-      # hand-written Kysely schema, while `supabase gen types` emits Supabase's
-      # own format. Add the check once the generator emits Kysely types.
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Kysely types match the migrated schema
+        env:
+          TYPES_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54332/postgres
+        run: |
+          pnpm --filter @template/db run gen-types
+          if ! git diff --exit-code -- packages/db/src/types.ts; then
+            echo "::error::packages/db/src/types.ts is stale — run 'mise run db:types' and commit it."
+            exit 1
+          fi
 
   migrate:
     # The template repository itself has no AWS accounts, so jobs that reach AWS
