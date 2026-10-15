@@ -33,7 +33,7 @@ services:
       - /app/node_modules
       - /app/apps/api/node_modules
     env_file:
-      - .env
+      - apps/api/.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -54,8 +54,9 @@ services:
       - .:/app
       - /app/node_modules
       - /app/apps/web/node_modules
+    # Web gets ONLY its own public VITE_* values — never the API's secrets.
     env_file:
-      - .env
+      - apps/web/.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
