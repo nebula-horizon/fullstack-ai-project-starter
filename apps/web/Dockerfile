@@ -53,5 +53,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 WORKDIR /app/apps/web
-# `vite preview` defaults to port 4173; pin it to the port the image exposes.
-CMD ["pnpm", "run", "start", "--host", "0.0.0.0", "--port", "3000"]
+# Production server: srvx serves dist/client as static files and hands every
+# other request to the TanStack Start server entry. It binds all interfaces and
+# listens on $PORT.
+CMD ["pnpm", "run", "start"]
