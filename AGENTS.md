@@ -4,8 +4,6 @@ Welcome, AI Agent! You are working on the Fullstack Vibe-Coding Template. This w
 
 Follow these absolute rules to maintain the integrity of our codebase, prevent security drift, and ensure clean compilation.
 
-**Company guide:** Company projects created from this starter also follow an internal engineering guide, which reaches Claude Code through an organization-managed plugin. When it is available in your session, follow it for anything it covers; this file describes the starter itself.
-
 ---
 
 ## 1. Codebase Style, Formatting & Linting (Biome)
@@ -69,7 +67,7 @@ Follow these absolute rules to maintain the integrity of our codebase, prevent s
 - **Infrastructure** lives in `tools/infra/aws/` (OpenTofu, `tofu` not `terraform`). You may run `tofu fmt`, `tofu validate`, and `tofu plan` against **dev**. Never run `tofu apply` or `tofu destroy` against any environment. CI applies the reviewed plan. Infra PRs target `dev`, never `main`. See `docs/deployment/aws.md`.
 - **Workflows**: infrastructure and app deploys are separate workflows. Each app's deploy workflow path filter must include `apps/<app>/**`, `packages/**`, and the workflow file itself.
 - **Secrets**: values live only in AWS Secrets Manager, written by a human. OpenTofu creates empty containers only. Never put a secret value in git, a `.env.example`, a tfvars file, a workflow, GitHub, a plan, or a chat. `.env.example` files carry names and shapes only.
-- **Supabase keys**: the service-role key is API-only. Never reference it in `apps/web`, in a `VITE_*` variable, or in a Docker build arg. All Supabase keys are secrets (Secrets Manager); dev and prod are separate Supabase accounts. Every secret is listed by name in `docs/security/secrets-inventory.md`; add new ones there and to `.env.example` in the same PR.
+- **Supabase keys**: the service-role key is API-only. Never reference it in `apps/web`, in a `VITE_*` variable, in a Docker build arg, or in the web task definition. Supabase config reaches the web app at runtime from its server environment (`apps/web/src/utils/public-config.ts`), never compiled into the bundle. All Supabase keys are secrets (Secrets Manager); dev and prod are separate Supabase accounts. Every secret is listed by name in `docs/security/secrets-inventory.md`; add new ones there and to `.env.example` in the same PR.
 - **Production access**: nobody has standing production access. Temporary access is granted manually by an admin on request. **You, the agent, must never be given or use production credentials** (prod AWS, prod Supabase, or prod secret values), and must not ask for them. If a task seems to need prod access, stop and tell the human to contact the admin.
 - **Placeholders**: use `<org>`, `<product>`, `<account-id-…>`, `<team-…>` for anything account-specific. Never invent real values.
 
@@ -78,6 +76,6 @@ Follow these absolute rules to maintain the integrity of our codebase, prevent s
 You are responsible for keeping the `docs/` directory up-to-date throughout the project lifecycle.
 - **Hierarchy & Structure**: Maintain a clear hierarchical structure.
 - **Index Files**: Every folder within `docs/` MUST have an `index.md` file explaining the folder's purpose and linking to the documents it contains.
-- **Continuous Updates**: Whenever architectural decisions, workflows, or project structures change, update the relevant documentation immediately.
+- **Docs ship with the code**: When a change alters anything `docs/` describes (architecture, data, deployment, security, workflows, runbooks), update `docs/` in the **same change** — the same commit or pull request — not in a follow-up. A pull request that leaves `docs/` describing the old behaviour is not done.
 - **Required shape**: `docs/` has `architecture/`, `database/`, `deployment/`, `runbooks/`, `security/`, `workflows/`, each with an `index.md`. Runbooks use the six sections Trigger, Impact, Access needed, Steps, Verify, Escalate to.
 - **Where decisions go**: Write a decision into the page it governs (`architecture/`, `database/`, `deployment/`, `security/`) and into OpenSpec specs under `openspec/specs/`. Do NOT create a `docs/decisions/` folder or ADR files. 

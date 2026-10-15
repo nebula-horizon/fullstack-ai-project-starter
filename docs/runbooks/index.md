@@ -5,7 +5,9 @@ Step-by-step responses to production events: one page per alert, outage, restore
 
 ## Documents Index
 
-Nothing here yet. Add a page the first time an event needs one, and walk through it in dev at least
+- **[_template.md](./_template.md)**: Copy this to start a new runbook.
+
+No runbooks yet. Add a page the first time an event needs one, and walk through it in dev at least
 once before relying on it.
 
 ## Format

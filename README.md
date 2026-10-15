@@ -4,8 +4,6 @@ Welcome! This is an elite, single-language (TypeScript) monorepo starter kit des
 
 It is completely optimized for **autonomous AI developer agents** ("vibe coding") and built with ultra-fast compilations, hermetic developer toolchains, and strict, compile-time type-safe boundaries.
 
-Company projects created from this starter also follow an internal engineering guide, which reaches Claude Code through an organization-managed plugin.
-
 > **🔒 Production access:** nobody has standing access to production (the prod AWS account, the prod Supabase account, or prod secrets). Changes reach prod only through CI with a required reviewer. If you need temporary access, **contact the admin**, who grants it manually and revokes it afterwards. **Never give an AI agent production credentials.** Details: [docs/security/production-access.md](./docs/security/production-access.md).
 
 ---
@@ -54,51 +52,46 @@ Company projects created from this starter also follow an internal engineering g
 
 ## ⚡ Quick Start
 
+From a fresh clone to both apps running on your machine. The full recipe is
+[docs/workflows/local-setup.md](./docs/workflows/local-setup.md).
+
 ### 1. Prerequisites
-Install these on your host machine before you start:
+- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**, installed and **running**: the local Supabase stack (Postgres, Studio, Auth, Storage) runs in containers.
+- **[mise](https://mise.jdx.dev/getting-started.html)**: installs the pinned Node.js, pnpm, Biome, Supabase CLI and OpenTofu from `mise.toml`.
+- **A coding agent** (optional): [Claude Code](https://claude.com/claude-code), [Cursor](https://cursor.com) or [opencode](https://opencode.ai). Agents read [`AGENTS.md`](./AGENTS.md).
 
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** — must be **installed and running**. The local Supabase stack (Postgres, Studio, Auth, Storage) runs as Docker sibling containers.
-- **[Mise](https://mise.jdx.dev/getting-started.html)** — the hermetic toolchain manager. It installs and pins the rest of the toolchain (Node.js, Biome, and the Supabase CLI) directly from `mise.toml`.
-- **A coding agent** — this template is built for autonomous AI development ("vibe coding"). Use [Claude Code](https://claude.com/claude-code), [Cursor](https://cursor.com), or [opencode](https://opencode.ai). Agents read [`AGENTS.md`](./AGENTS.md) for the project's strict conventions.
+### 2. Access: dev only
+Local development needs **no cloud access at all**: everything runs on your machine. Beyond that, you only ever get **dev** access. Nobody holds standing production access; see [docs/security/production-access.md](./docs/security/production-access.md). Never put a production value in a local `.env`.
 
-### 2. Install the Toolchain
-Trust the repo config and install the pinned tools (Node.js, Biome, Supabase CLI) from `mise.toml`:
+### 3. Install the toolchain and dependencies
 ```bash
-mise trust
-mise install
+mise trust && mise install
+pnpm install
 ```
 
-### 3. Workspace Setup
+### 4. Configure local environment
 Each app has its own git-ignored `.env`, copied from its `.env.example` (names and shapes only):
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
-pnpm install
-(cd apps/api && node --import tsx ace.js generate:key)   # writes a per-machine APP_KEY into apps/api/.env
+(cd apps/api && node --import tsx ace.js generate:key)   # per-machine APP_KEY
 ```
-After step 4, put the local anon key from `mise run db:status` into `apps/web/.env`. The service-role key never goes into `apps/web`. Full recipe: [docs/workflows/local-setup.md](./docs/workflows/local-setup.md); where every key lives: [docs/security/secrets-inventory.md](./docs/security/secrets-inventory.md).
 
-Personal editor files (`.vscode/`, `.idea/`) are not in the repo's `.gitignore`. Add them to your global gitignore.
-
-### 4. Start Local Supabase Database
-Spin up the local Supabase Postgres instance, migrations, and Web Studio:
+### 5. Start local Supabase
 ```bash
-supabase start --workdir tools
+mise run db:start    # Postgres, Auth, Studio in Docker
+mise run db:reset    # apply every migration
+mise run db:status   # prints the local anon key
 ```
-*Port Maps:*
-- Postgres Database: `127.0.0.1:54332`
-- Supabase Studio Web UI: `http://127.0.0.1:54328`
-- API Gateway (Kong): `http://127.0.0.1:54326`
-- Email Testing UI (Mailpit): `http://127.0.0.1:54324`
+Put the anon key into `apps/web/.env` as `SUPABASE_ANON_KEY`. The service-role key never goes into `apps/web`. Local ports: Postgres `127.0.0.1:54332`, Supabase API `http://127.0.0.1:54326`, Studio `http://127.0.0.1:54328`, Mailpit `http://127.0.0.1:54324`.
 
-### 5. Run Development Servers
-Start both the AdonisJS backend API and TanStack Start frontend in development mode:
+### 6. Run
 ```bash
 mise run dev
 ```
-*Application URLs:*
-- TanStack Web App: `http://localhost:3000`
-- AdonisJS Backend API: `http://localhost:3333`
+Web on `http://localhost:3000`, API on `http://localhost:3333`.
+
+Personal editor files (`.vscode/`, `.idea/`) are not in the repo's `.gitignore`; add them to your global gitignore.
 
 ---
 
@@ -132,4 +125,4 @@ Branch from `dev`, open PRs into `dev`, verify in dev, then promote with a PR fr
 ---
 
 ## 📝 Documenting Your Progress
-All project architecture, guides, and workflows are stored under `/docs`. Refer to `/docs/index.md` for a complete index of directories.
+All project architecture, guides, and workflows are stored under `/docs`. Refer to `/docs/index.md` for a complete index of directories. When a change alters something `docs/` describes, update `docs/` in the same pull request.
