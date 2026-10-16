@@ -1,25 +1,30 @@
 # 📂 Documentation Index
 
-Welcome to the centralized documentation repository. This directory serves as the single source of truth for all architectural specs, local developer guides, data schema contracts, and API structures.
+Documentation for **this product**: design, data, releases, operations, security and day-to-day
+recipes. Every folder below exists from day one, even when it holds only its index, so there is always an obvious place for the next page.
 
----
+**The product:** a TypeScript monorepo with a TanStack Start web app (`apps/web`) and an AdonisJS
+API (`apps/api`), using Supabase for Postgres and auth and AWS (ECS Fargate) for hosting. There are
+two environments, `dev` and `prod`, in separate AWS and Supabase accounts.
 
-## 🗺️ Documentation Directory Map
+| Folder | Answers | Start at |
+| --- | --- | --- |
+| [architecture/](./architecture/index.md) | Why is it built this way? | [overview.md](./architecture/overview.md) |
+| [database/](./database/index.md) | Where is the data, and who owns it? | [overview.md](./database/overview.md) |
+| [deployment/](./deployment/index.md) | How does a change ship? | [aws.md](./deployment/aws.md) |
+| [runbooks/](./runbooks/index.md) | Something is wrong in production — what now? | [index.md](./runbooks/index.md) |
+| [security/](./security/index.md) | Who can access what, and where are secrets stored? | [secrets-inventory.md](./security/secrets-inventory.md) |
+| [workflows/](./workflows/index.md) | How do I do X while developing? | [local-setup.md](./workflows/local-setup.md) |
 
-Manage, navigate, and keep these documents updated as your project scales:
+> **🔒 Nobody has standing production access.** Contact the admin for a temporary grant. Never give
+> an AI agent production credentials. See [security/production-access.md](./security/production-access.md).
 
-- **📁 [/docs/architecture/](./architecture/)**: Permanent architectural spec sheets:
-  - **[clean-backend-api.md](./architecture/clean-backend-api.md)**: AdonisJS v6 Domain-driven entities, repository interfaces, and Kysely database adapters.
-  - **[web-frontend-gateway.md](./architecture/web-frontend-gateway.md)**: TanStack Start client-held JWT auth flow (Supabase sign-in, Bearer token attachment, dev API proxy).
-- **📁 [/docs/workflows/](./workflows/)**: Local developer guides and workflows:
-  - **[database-migrations.md](./workflows/database-migrations.md)**: Supabase local database ports, DDL migrations, and dynamic types generation.
-  - **[type-safe-contracts.md](./workflows/type-safe-contracts.md)**: Swagger auto-export, contracts compilation, and type-safe react-query client fetching.
+## Rules for this folder
 
----
-
-## 🏗️ Folder Documentation Rules
-Every sub-directory created inside this project **MUST** follow our strict documentation maintenance standards (as declared in `AGENTS.md` and root guidelines):
-
-1. **Mandatory Index File:** Every folder within `/docs` (or nested document sub-directories) MUST contain an `index.md` file outlining the folder's purpose and linking to all documents it holds.
-2. **Continuous Updates:** Whenever architectural decisions, backend routes, local ports, or data models are added or modified, update the matching markdown documentation immediately.
-3. **No Code Redundancy:** Keep documentation clean, clear, and high-level—do not paste raw code files unless they serve as necessary configuration examples.
+- **Each folder keeps an `index.md`** that lists its pages.
+- **Docs ship with the change:** if a PR changes something documented here, it updates the page too.
+- **Current state, not history.** Pages describe how the system *is*, with the reason beside each
+  rule. Diagrams are Mermaid.
+- **Decisions live with what they decide**: in the relevant page and in OpenSpec specs under
+  [`openspec/specs/`](../openspec/specs/), not in a separate `docs/decisions/` folder or ADRs.
+  A decision log makes readers replay history; a page states what is true now, and why.

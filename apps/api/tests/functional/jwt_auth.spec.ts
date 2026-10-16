@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { test } from '@japa/runner'
 import { SignJWT } from 'jose'
 import env from '#start/env'
@@ -5,8 +6,10 @@ import env from '#start/env'
 test.group('JWT Auth Middleware integration tests', () => {
   test('passes with a valid signed JWT token', async ({ client }) => {
     const secret = new TextEncoder().encode(env.get('JWT_SECRET'))
+    // Supabase user ids are UUIDs (profiles.id is uuid); a random one has no
+    // profile, so an authenticated request gets 404 rather than 401.
     const token = await new SignJWT({
-      sub: 'test-user-id',
+      sub: randomUUID(),
       email: 'john@example.com',
       fullName: 'John Doe',
     })

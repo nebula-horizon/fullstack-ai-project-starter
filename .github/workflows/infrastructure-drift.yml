@@ -1,0 +1,55 @@
+# Nightly drift check: a read-only plan against each environment, never an
+# apply. If the plan is not empty, someone changed AWS outside CI — find out who
+# and why rather than re-running until it goes green.
+name: infrastructure-drift
+
+on:
+  schedule:
+    - cron: '0 17 * * *' # 02:00 JST, so the result is waiting at the start of the day
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    working-directory: tools/infra/aws
+
+jobs:
+  drift:
+    # The template repository itself has no AWS accounts, so jobs that reach AWS
+    # are skipped there. Every project created from it has another name, so they
+    # run — and fail closed — until its Environments are configured.
+    if: github.repository != 'nebula-horizon/fullstack-ai-project-starter'
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [dev-plan, prod-plan]
+    # Scheduled runs always start from the default branch, so the matrix names
+    # the environment instead of deriving it from github.ref.
+    environment: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    env:
+      ENV: ${{ matrix.target == 'prod-plan' && 'prod' || 'dev' }}
+    steps:
+      # main reflects prod; dev reflects the dev account.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.target == 'prod-plan' && 'main' || 'dev' }}
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.10.10 # keep in step with infrastructure.yml and mise.toml
+          tofu_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: |
+          tofu init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${ENV}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true"
+      # Exit code 2 from -detailed-exitcode means "changes pending", which fails the job.
+      - run: tofu plan -input=false -lock=false -var-file="environments/${ENV}.tfvars" -detailed-exitcode

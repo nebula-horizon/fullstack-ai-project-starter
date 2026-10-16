@@ -1,0 +1,36 @@
+# Cheap repository-hygiene checks on every PR.
+#   - secret scan with length-anchored patterns
+#   - exactly one lockfile, pnpm's
+# Enable GitHub push protection as well — a scanner that only runs here finds
+# things one push late.
+name: repo-checks
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret scan (anchored on shape, not prefix)
+        run: |
+          # Report path, line and match length — never the value.
+          PATTERN='AKIA[A-Z0-9]{16}|ASIA[A-Z0-9]{16}|gh[pousr]_[A-Za-z0-9]{36}|AIza[0-9A-Za-z_-]{35}|xox[baprs]-[0-9A-Za-z-]{10,}|[sr]k_(live|test)_[0-9A-Za-z]{24,}|sk-ant-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.'
+          if git grep -nIoE "$PATTERN" -- ':!pnpm-lock.yaml' > /tmp/hits; then
+            awk -F: '{ printf "::error file=%s,line=%s::credential-shaped string (%d chars)\n", $1, $2, length($0) - length($1) - length($2) - 2 }' /tmp/hits
+            exit 1
+          fi
+          echo "No credential-shaped strings found."
+      - name: One package manager, one lockfile
+        run: |
+          foreign="$(git ls-files -- '*package-lock.json' '*yarn.lock' '*bun.lockb' '*npm-shrinkwrap.json')"
+          if [[ -n "$foreign" ]]; then
+            echo "::error::Foreign lockfile(s) — this repo uses pnpm only:"; echo "$foreign"; exit 1
+          fi
+          git ls-files --error-unmatch pnpm-lock.yaml >/dev/null

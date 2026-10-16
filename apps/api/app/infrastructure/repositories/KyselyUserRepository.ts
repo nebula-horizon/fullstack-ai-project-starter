@@ -14,7 +14,7 @@ export class KyselyUserRepository implements UserRepository {
       id: row.id,
       email: row.email,
       fullName: row.full_name,
-      createdAt: row.created_at,
+      createdAt: row.created_at.toISOString(),
     }
   }
 
@@ -25,7 +25,6 @@ export class KyselyUserRepository implements UserRepository {
         id: user.id,
         email: user.email,
         full_name: user.fullName,
-        created_at: new Date().toISOString(),
       })
       .returningAll()
       .executeTakeFirstOrThrow()
@@ -34,7 +33,7 @@ export class KyselyUserRepository implements UserRepository {
       id: row.id,
       email: row.email,
       fullName: row.full_name,
-      createdAt: row.created_at,
+      createdAt: row.created_at.toISOString(),
     }
   }
 }

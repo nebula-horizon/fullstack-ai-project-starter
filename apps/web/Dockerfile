@@ -14,7 +14,7 @@ RUN apk update && apk upgrade --no-cache && \
     apk add --no-cache make gcc g++ python3
 
 # Install pnpm and dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@9.15.9 && pnpm install --frozen-lockfile
 
 # Build shared dependencies and web app
 RUN pnpm --filter @template/db run build
@@ -43,7 +43,7 @@ ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 
 # Install production dependencies and patch global/local picomatch for CVE-2026-33671
-RUN npm install -g pnpm && \
+RUN npm install -g pnpm@9.15.9 && \
     pnpm install --frozen-lockfile && \
     npm install -g picomatch@4.0.4
 
@@ -53,4 +53,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 WORKDIR /app/apps/web
-CMD ["pnpm", "run", "start", "--host", "0.0.0.0"]
+# Production server: srvx serves dist/client as static files and hands every
+# other request to the TanStack Start server entry. It binds all interfaces and
+# listens on $PORT.
+CMD ["pnpm", "run", "start"]

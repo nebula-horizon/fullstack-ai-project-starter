@@ -1,0 +1,10 @@
+schema: spec-driven
+
+# Project context, shown to AI agents when they create OpenSpec artifacts.
+context: |
+  TypeScript pnpm monorepo. apps/web: TanStack Start (React, SSR). apps/api:
+  AdonisJS v6 REST API with clean-architecture layers and Kysely (no ORM).
+  Supabase for Postgres and auth; migrations in tools/supabase/migrations.
+  Deployed to AWS (ECS Fargate) with OpenTofu in tools/infra/aws; dev and prod
+  are separate accounts. Docs live in docs/ and change in the same pull request
+  as the code they describe.

@@ -4,7 +4,7 @@ import { Lock, LogIn } from 'lucide-react'
 import type React from 'react'
 import { useState } from 'react'
 import { useAuth } from '@/utils/auth'
-import { supabase } from '@/utils/supabase'
+import { getSupabase } from '@/utils/supabase'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -26,7 +26,7 @@ function LoginPage() {
     const email = String(form.get('email') ?? '')
     const password = String(form.get('password') ?? '')
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await getSupabase().auth.signInWithPassword({
       email,
       password,
     })

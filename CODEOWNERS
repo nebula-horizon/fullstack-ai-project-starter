@@ -1,0 +1,33 @@
+# CODEOWNERS — who is asked to review changes to which part of this repository.
+#
+# PLACEHOLDERS: replace every `@<org>/<team-…>` with a real GitHub team when you
+# start a project from this starter. Two things to know:
+#   * An owner GitHub cannot resolve (placeholder, typo, missing team) is skipped
+#     without any warning, so until real teams are filled in nothing is requested.
+#   * Review is only *required* once branch protection on `dev` and `main` has
+#     "Require review from Code Owners" turned on.
+#
+# Last match wins, so the catch-all comes first and specific paths below it.
+
+*                                   @<org>/<team-leads>
+
+# Applications — one deployable each.
+/apps/web/                          @<org>/<team-frontend>
+/apps/api/                          @<org>/<team-backend>
+
+# Shared packages — a change here affects every consuming app.
+/packages/                          @<org>/<team-backend> @<org>/<team-frontend>
+
+# Database schema. Migrations reach prod through CI, so review here IS the gate.
+/tools/supabase/                    @<org>/<team-backend> @<org>/<team-platform>
+
+# Infrastructure and the pipelines that apply it. Changes here change who can
+# reach which AWS account (OIDC trust policies) — keep this list short.
+/tools/infra/                       @<org>/<team-platform>
+/.github/                           @<org>/<team-platform>
+/CODEOWNERS                         @<org>/<team-platform>
+
+# Agent instructions and the rules about the rules.
+/AGENTS.md                          @<org>/<team-leads>
+/CLAUDE.md                          @<org>/<team-leads>
+/docs/                              @<org>/<team-leads>

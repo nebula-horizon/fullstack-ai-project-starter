@@ -1,6 +1,6 @@
 ["init"]
 description = "Initialize your project"
-run = "node scripts/bootstrap.js"
+run = "node tools/scripts/bootstrap.js"
 
 ["dev"]
 description = "Start development servers across workspace"
@@ -30,6 +30,10 @@ run = "biome lint . --write"
 description = "Type check all packages"
 run = "pnpm -r run typecheck"
 
+["generate"]
+description = "Regenerate committed generated files (API codegen, contracts, route tree)"
+run = "tools/scripts/regenerate.sh"
+
 ["db:start"]
 description = "Start the local Supabase container stack"
 run = "supabase start --workdir tools"
@@ -47,5 +51,6 @@ description = "Reset the local database and re-apply all SQL migrations"
 run = "supabase db reset --workdir tools"
 
 ["db:types"]
-description = "Re-generate TypeScript types from local Supabase Postgres"
+description = "Regenerate packages/db/src/types.ts (Kysely) from the local Supabase Postgres"
+env = { TYPES_DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:54332/postgres" }
 run = "pnpm --filter ./packages/db run gen-types"

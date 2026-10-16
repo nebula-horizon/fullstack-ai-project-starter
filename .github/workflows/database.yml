@@ -1,0 +1,108 @@
+# Supabase schema migrations: tools/supabase/migrations → dev → prod, through
+# CI only — never from a laptop. See docs/workflows/database-migrations.md.
+#
+#   pull request  verify on a throwaway local Postgres (no cloud credentials):
+#                 every migration applies from scratch, the schema lints clean,
+#                 and packages/db/src/types.ts matches it
+#   push to dev   dry-run, then apply to the DEV Supabase account (automatic)
+#   push to main  dry-run, then apply to the PROD Supabase account — the job
+#                 declares the `prod` Environment, so it waits for a reviewer
+#
+# Migrations and app deploys are separate workflows, so each migration must
+# work with the app version already running (expand → deploy → contract); see
+# docs/workflows/database-migrations.md.
+name: database
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'tools/supabase/**'
+      - 'packages/db/**'
+      - '.github/workflows/database.yml'
+  push:
+    branches: [dev, main]
+    paths:
+      - 'tools/supabase/migrations/**'
+      - '.github/workflows/database.yml'
+  workflow_dispatch:
+
+# Never run two migrations against one database at once, and never cancel one.
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_CLI_VERSION: 2.113.0 # pinned; keep in step with mise.toml
+
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      # Local CLI Postgres only — the CLI's --workdir flag points at tools/,
+      # where supabase/config.toml lives (the working-directory quirk).
+      - name: Apply every migration to an empty database
+        run: supabase db start --workdir tools
+      - name: Lint the schema
+        run: supabase db lint --workdir tools --local --fail-on error
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.3
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Kysely types match the migrated schema
+        env:
+          TYPES_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54332/postgres
+        run: |
+          pnpm --filter @template/db run gen-types
+          if ! git diff --exit-code -- packages/db/src/types.ts; then
+            echo "::error::packages/db/src/types.ts is stale — run 'mise run db:types' and commit it."
+            exit 1
+          fi
+
+  migrate:
+    # The template repository itself has no AWS accounts, so jobs that reach AWS
+    # are skipped there. Every project created from it has another name, so they
+    # run — and fail closed — until its Environments are configured.
+    if: github.event_name != 'pull_request' && github.repository != 'nebula-horizon/fullstack-ai-project-starter'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      SSM: /${{ vars.PRODUCT }}/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      # The connection string lives in Secrets Manager, never in GitHub. It is masked before use and
+      # exists only for the life of this job.
+      - name: Read the migration connection string
+        run: |
+          SECRET_ARN="$(aws ssm get-parameter --name "${SSM}/deploy/migrations-secret-arn" --query Parameter.Value --output text)"
+          DB_URL="$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .DATABASE_URL)"
+          if [[ -z "$DB_URL" || "$DB_URL" == "null" || "$DB_URL" == "set-out-of-band" ]]; then
+            echo "::error::${SSM} supabase-migrations secret has no DATABASE_URL yet — an admin must set it out of band."
+            exit 1
+          fi
+          echo "::add-mask::$DB_URL"
+          echo "SUPABASE_DB_URL=$DB_URL" >> "$GITHUB_ENV"
+      - name: Dry run — list the migrations that would be applied
+        run: supabase db push --workdir tools --db-url "$SUPABASE_DB_URL" --dry-run
+      - name: Apply migrations
+        run: supabase db push --workdir tools --db-url "$SUPABASE_DB_URL"

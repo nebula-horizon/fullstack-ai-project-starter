@@ -1,7 +1,7 @@
 # Build-App Journey
 
 You are the coding agent for this fullstack template. The user just launched you
-from `scripts/bootstrap` to **build their app**. Follow this playbook end-to-end.
+from `tools/scripts/bootstrap.js` to **build their app**. Follow this playbook end-to-end.
 
 This file is agent-agnostic — it works whether you are Claude Code, opencode, or
 Cursor. The project's conventions live in `AGENTS.md` (already loaded for you);
@@ -10,7 +10,7 @@ any code and obey it strictly (Biome style, Clean Architecture layering, Kysely
 not Lucid, path aliases, the contracts regen loop).
 
 The project has already been personalized (renamed from `@template` to the user's
-scope) before you were launched. Do **not** run `scripts/bootstrap` again.
+scope) before you were launched. Do **not** run `tools/scripts/bootstrap.js` again.
 
 ---
 
